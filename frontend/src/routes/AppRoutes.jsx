@@ -6,6 +6,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import Students from "../pages/Students";
 import Batches from "../pages/Batches";
 import Fees from "../pages/Fees";
+import Attendance from "../pages/Attendance";
 
 function AppRoutes() {
   return (
@@ -41,6 +42,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Fees />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/attendance"
+        element={
+          <ProtectedRoute>
+            <Attendance />
           </ProtectedRoute>
         }
       />
