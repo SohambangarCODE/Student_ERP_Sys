@@ -17,6 +17,9 @@ app.use('/api/auth', authRoutes);
 const studentRoutes = require('./routes/studentRoutes');
 app.use('/api/students', studentRoutes);
 
+const batchRoutes = require('./routes/batchRoutes');
+app.use('/api/batches', batchRoutes);
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
