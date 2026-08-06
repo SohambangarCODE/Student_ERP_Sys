@@ -11,17 +11,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const authRoutes = require('./routes/authRoutes');
-app.use('/api/auth', authRoutes);
+const authRoutes = require("./routes/authRoutes");
+app.use("/api/auth", authRoutes);
 
-const studentRoutes = require('./routes/studentRoutes');
-app.use('/api/students', studentRoutes);
+const studentRoutes = require("./routes/studentRoutes");
+app.use("/api/students", studentRoutes);
 
-const batchRoutes = require('./routes/batchRoutes');
-app.use('/api/batches', batchRoutes);
+const batchRoutes = require("./routes/batchRoutes");
+app.use("/api/batches", batchRoutes);
 
-const feeRoutes = require('./routes/feeRoutes');
-app.use('/api/fees', feeRoutes);
+const feeRoutes = require("./routes/feeRoutes");
+app.use("/api/fees", feeRoutes);
+
+const attendanceRoutes = require('./routes/attendanceRoutes');
+app.use('/api/attendance', attendanceRoutes);
 
 mongoose
   .connect(process.env.MONGO_URI)
