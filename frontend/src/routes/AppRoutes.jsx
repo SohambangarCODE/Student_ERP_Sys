@@ -8,6 +8,8 @@ import Batches from "../pages/Batches";
 import Fees from "../pages/Fees";
 import Attendance from "../pages/Attendance";
 import Exams from "../pages/Exams";
+import Staff from "../pages/Staff";
+import Notices from "../pages/Notices";
 
 function AppRoutes() {
   return (
@@ -59,6 +61,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Exams />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff"
+        element={
+          <ProtectedRoute allowedRoles={["super_admin", "branch_admin"]}>
+            <Staff />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notices"
+        element={
+          <ProtectedRoute>
+            <Notices />
           </ProtectedRoute>
         }
       />
