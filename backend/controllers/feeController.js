@@ -3,6 +3,71 @@ const FeeStructure = require('../models/FeeStructure');
 const FeePayment = require('../models/FeePayment');
 const Student = require('../models/Student');
 
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
+// POST /api/fees/razorpay/order
+// Step 1 of the flow — create an order with Razorpay, return its ID to the frontend
+exports.createRazorpayOrder = async (req, res) => {
+  try {
+    const { amount } = req.body; // amount in rupees, e.g. 7500
+
+    const order = await razorpay.orders.create({
+      amount: amount * 100, // Razorpay expects the smallest currency unit — paise, not rupees
+      currency: 'INR',
+      receipt: `receipt_${Date.now()}`,
+    });
+
+    res.json(order);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to create payment order', error: err.message });
+  }
+};
+
+// POST /api/fees/razorpay/verify
+// Step 2 — after checkout succeeds, verify the signature, THEN record the real FeePayment
+exports.verifyRazorpayPayment = async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, studentId, feeStructureId, amountPaid } = req.body;
+
+    // Recreate the signature ourselves using our secret key, compare to what Razorpay sent back.
+    // If they match, we KNOW this response genuinely came from Razorpay and wasn't faked.
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest('hex');
+
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({ message: 'Payment verification failed — signature mismatch' });
+    }
+
+    // Verified — now it's safe to record it as a real payment, same as your existing recordPayment logic
+    const student = await Student.findOne({ _id: studentId, instituteId: req.user.instituteId });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found in this institute' });
+    }
+
+    const payment = await FeePayment.create({
+      instituteId: req.user.instituteId,
+      studentId,
+      feeStructureId,
+      amountPaid,
+      paymentMethod: 'razorpay',
+      transactionRef: razorpay_payment_id,
+      receiptNumber: `RCPT-${Date.now()}`,
+    });
+
+    res.status(201).json(payment);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 // ---------- FEE STRUCTURE ----------
 
 // POST /api/fees/structure
