@@ -35,6 +35,9 @@ app.use('/api/staff', staffRoutes);
 const noticeRoutes = require('./routes/noticeRoutes');
 app.use('/api/notices', noticeRoutes);
 
+const dashboardRoutes = require('./routes/dashboardRoutes');
+app.use('/api/dashboard', dashboardRoutes);
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
