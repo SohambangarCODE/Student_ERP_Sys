@@ -154,7 +154,7 @@ function FeeStructuresTab() {
             <label className="block text-sm font-medium text-slate-700 mb-2">Installments</label>
             <div className="space-y-2">
               {formData.installments.map((inst, i) => (
-                <div key={i} className="grid grid-cols-3 gap-2">
+                <div key={i} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <input
                     value={inst.label}
                     onChange={(e) => updateInstallment(i, 'label', e.target.value)}

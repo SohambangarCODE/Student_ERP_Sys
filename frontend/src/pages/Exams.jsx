@@ -156,7 +156,7 @@ function ExamsTab() {
             <label className="block text-sm font-medium text-slate-700 mb-2">Subjects</label>
             <div className="space-y-2">
               {formData.subjects.map((subj, i) => (
-                <div key={i} className="grid grid-cols-2 gap-2">
+                <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input
                     value={subj.name}
                     onChange={(e) => updateSubject(i, 'name', e.target.value)}

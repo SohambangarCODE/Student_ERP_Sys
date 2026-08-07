@@ -9,32 +9,36 @@ function Table({ columns, data, onRowClick, emptyMessage = 'No records found' })
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-slate-200 bg-slate-50">
-            {columns.map((col) => (
-              <th key={col.key} className="text-left font-medium text-slate-500 px-4 py-3">
-                {col.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, i) => (
-            <tr
-              key={row._id || i}
-              onClick={() => onRowClick?.(row)}
-              className={`border-b border-slate-100 last:border-0 ${onRowClick ? 'hover:bg-slate-50 cursor-pointer' : ''}`}
-            >
+      {/* overflow-x-auto lets the table scroll horizontally on narrow screens
+          instead of every column getting crushed to fit */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[600px]">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50">
               {columns.map((col) => (
-                <td key={col.key} className="px-4 py-3 text-slate-700">
-                  {col.render ? col.render(row) : row[col.key]}
-                </td>
+                <th key={col.key} className="text-left font-medium text-slate-500 px-4 py-3 whitespace-nowrap">
+                  {col.label}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.map((row, i) => (
+              <tr
+                key={row._id || i}
+                onClick={() => onRowClick?.(row)}
+                className={`border-b border-slate-100 last:border-0 ${onRowClick ? 'hover:bg-slate-50 cursor-pointer' : ''}`}
+              >
+                {columns.map((col) => (
+                  <td key={col.key} className="px-4 py-3 text-slate-700 whitespace-nowrap">
+                    {col.render ? col.render(row) : row[col.key]}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

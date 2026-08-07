@@ -146,7 +146,7 @@ function Batches() {
             <label className="block text-sm font-medium text-slate-700 mb-2">Schedule</label>
             <div className="space-y-2">
               {formData.schedule.map((slot, i) => (
-                <div key={i} className="flex gap-2 items-center">
+                <div key={i} className="flex flex-col sm:flex-row gap-2 sm:items-center">
                   <select
                     value={slot.day}
                     onChange={(e) => updateSlot(i, 'day', e.target.value)}
