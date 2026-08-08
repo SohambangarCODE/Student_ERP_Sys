@@ -41,6 +41,12 @@ app.use('/api/dashboard', dashboardRoutes);
 const parentRoutes = require('./routes/parentRoutes');
 app.use('/api/parents', parentRoutes);
 
+const instituteRoutes = require('./routes/instituteRoutes');
+app.use('/api/institutes', instituteRoutes);
+
+const messageRoutes = require('./routes/messageRoutes');
+app.use('/api/messages', messageRoutes);
+
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))

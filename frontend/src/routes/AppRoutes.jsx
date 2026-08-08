@@ -15,6 +15,8 @@ import { useAuth } from "../context/AuthContext";
 import MyFees from "../pages/MyFees";
 import MyResults from "../pages/MyResults";
 import MyAttendance from "../pages/MyAttendance";
+import Messages from "../pages/Messages";
+import MyMessages from "../pages/MyMessages";
 
 // A real, standalone function — defined here, OUTSIDE and ABOVE AppRoutes,
 // not inside any JSX attribute. This is what was missing before.
@@ -137,6 +139,24 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["parent"]}>
             <MyAttendance />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/messages"
+        element={
+          <ProtectedRoute
+            allowedRoles={["super_admin", "branch_admin", "teacher"]}
+          >
+            <Messages />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-messages"
+        element={
+          <ProtectedRoute allowedRoles={["parent"]}>
+            <MyMessages />
           </ProtectedRoute>
         }
       />

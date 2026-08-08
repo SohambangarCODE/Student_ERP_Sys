@@ -15,6 +15,7 @@ const navItems = [
   { to: '/exams', label: 'Exams', icon: GraduationCap },
   { to: '/staff', label: 'Staff', icon: UserCog },
   { to: '/notices', label: 'Notices', icon: Megaphone },
+  { to: '/messages', label: 'Messages', icon: MessageCircle },
 ];
 
 const parentNavItems = [
@@ -23,6 +24,7 @@ const parentNavItems = [
   { to: '/my-results', label: 'Exam Results', icon: GraduationCap },
   { to: '/my-attendance', label: 'Attendance History', icon: ClipboardCheck },
   { to: '/notices', label: 'Notices', icon: Megaphone },
+  { to: '/my-messages', label: 'Messages', icon: MessageCircle },
 ];
 
 

@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { getMyChildren, getChildResults } from '../api/parentApi';
+import { generateReportCard } from '../utils/generateReportCard';
+import { getMyInstitute } from '../api/instituteApi';
 
 function MyResults() {
   const [children, setChildren] = useState([]);
   const [selectedChild, setSelectedChild] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [institute, setInstitute] = useState(null);
+
+useEffect(() => {
+  getMyInstitute().then((res) => setInstitute(res.data));
+}, []);
 
   useEffect(() => {
     getMyChildren().then((res) => {
@@ -52,14 +60,25 @@ function MyResults() {
             return (
               <div key={r._id} className="bg-white rounded-xl border border-slate-200 p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="font-medium text-slate-900">{r.examId?.name || 'Exam'}</p>
-                    <p className="text-xs text-slate-400">
-                      {r.examId?.examDate ? new Date(r.examId.examDate).toLocaleDateString() : ''}
-                    </p>
-                  </div>
-                  <p className="text-lg font-semibold text-brand-600">{total} marks</p>
-                </div>
+  <div>
+    <p className="font-medium text-slate-900">{r.examId?.name || 'Exam'}</p>
+    <p className="text-xs text-slate-400">
+      {r.examId?.examDate ? new Date(r.examId.examDate).toLocaleDateString() : ''}
+    </p>
+  </div>
+  <div className="flex items-center gap-3">
+    <p className="text-lg font-semibold text-brand-600">{total} marks</p>
+    <button
+      onClick={() => {
+        const child = children.find((c) => c._id === selectedChild);
+        generateReportCard({ institute, student: child, examResult: r });
+      }}
+      className="text-xs font-medium text-brand-600 hover:text-brand-700 border border-brand-200 rounded-lg px-2.5 py-1.5"
+    >
+      Download PDF
+    </button>
+  </div>
+</div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {r.marks.map((m) => (
                     <div key={m.subjectName} className="bg-slate-50 rounded-lg p-3 text-center">
