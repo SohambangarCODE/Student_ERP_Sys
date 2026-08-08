@@ -78,6 +78,7 @@ function generateToken(user) {
       id: user._id,
       instituteId: user.instituteId,
       role: user.role,
+      children: user.children || [],
     },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
