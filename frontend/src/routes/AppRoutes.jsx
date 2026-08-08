@@ -10,24 +10,46 @@ import Attendance from "../pages/Attendance";
 import Exams from "../pages/Exams";
 import Staff from "../pages/Staff";
 import Notices from "../pages/Notices";
+import ParentDashboard from "../pages/ParentDashboard";
+import { useAuth } from "../context/AuthContext";
+import MyFees from "../pages/MyFees";
+import MyResults from "../pages/MyResults";
+import MyAttendance from "../pages/MyAttendance";
+
+// A real, standalone function — defined here, OUTSIDE and ABOVE AppRoutes,
+// not inside any JSX attribute. This is what was missing before.
+function DashboardRouter() {
+  const { user } = useAuth();
+  return user?.role === "parent" ? <ParentDashboard /> : <Dashboard />;
+}
 
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <DashboardRouter />
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/students"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute
+            allowedRoles={[
+              "super_admin",
+              "branch_admin",
+              "accountant",
+              "teacher",
+              "front_desk",
+            ]}
+          >
             <Students />
           </ProtectedRoute>
         }
@@ -35,7 +57,15 @@ function AppRoutes() {
       <Route
         path="/batches"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute
+            allowedRoles={[
+              "super_admin",
+              "branch_admin",
+              "accountant",
+              "teacher",
+              "front_desk",
+            ]}
+          >
             <Batches />
           </ProtectedRoute>
         }
@@ -43,7 +73,9 @@ function AppRoutes() {
       <Route
         path="/fees"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute
+            allowedRoles={["super_admin", "branch_admin", "accountant"]}
+          >
             <Fees />
           </ProtectedRoute>
         }
@@ -51,7 +83,9 @@ function AppRoutes() {
       <Route
         path="/attendance"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute
+            allowedRoles={["super_admin", "branch_admin", "teacher"]}
+          >
             <Attendance />
           </ProtectedRoute>
         }
@@ -59,7 +93,9 @@ function AppRoutes() {
       <Route
         path="/exams"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute
+            allowedRoles={["super_admin", "branch_admin", "teacher"]}
+          >
             <Exams />
           </ProtectedRoute>
         }
@@ -81,10 +117,34 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/my-fees"
+        element={
+          <ProtectedRoute allowedRoles={["parent"]}>
+            <MyFees />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-results"
+        element={
+          <ProtectedRoute allowedRoles={["parent"]}>
+            <MyResults />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-attendance"
+        element={
+          <ProtectedRoute allowedRoles={["parent"]}>
+            <MyAttendance />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="*"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <DashboardRouter />
           </ProtectedRoute>
         }
       />

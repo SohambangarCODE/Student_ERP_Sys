@@ -17,11 +17,23 @@ const navItems = [
   { to: '/notices', label: 'Notices', icon: Megaphone },
 ];
 
+const parentNavItems = [
+  { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { to: '/my-fees', label: 'Pay Fees', icon: Wallet },
+  { to: '/my-results', label: 'Exam Results', icon: GraduationCap },
+  { to: '/my-attendance', label: 'Attendance History', icon: ClipboardCheck },
+  { to: '/notices', label: 'Notices', icon: Megaphone },
+];
+
+
 function DashboardLayout({ children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false); // mobile drawer state
+
+const isParent = user?.role === 'parent';
+const visibleNavItems = isParent ? parentNavItems : navItems;
 
   const handleLogout = () => {
     logout();
@@ -59,7 +71,7 @@ function DashboardLayout({ children }) {
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink

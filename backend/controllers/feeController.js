@@ -46,6 +46,15 @@ exports.verifyRazorpayPayment = async (req, res) => {
       return res.status(400).json({ message: 'Payment verification failed — signature mismatch' });
     }
 
+
+    // A parent may only ever pay fees for their own child — same ownership rule as everywhere else in this module.
+    if (req.user.role === 'parent') {
+      const isOwnChild = (req.user.children || []).some((id) => id.toString() === studentId);
+      if (!isOwnChild) {
+        return res.status(403).json({ message: 'You cannot pay fees for this student' });
+      }
+    }
+    
     // Verified — now it's safe to record it as a real payment, same as your existing recordPayment logic
     const student = await Student.findOne({ _id: studentId, instituteId: req.user.instituteId });
     if (!student) {

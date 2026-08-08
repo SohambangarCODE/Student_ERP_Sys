@@ -97,9 +97,20 @@ exports.enterMarks = async (req, res) => {
 // GET /api/exams/results/student/:studentId
 exports.getResultsByStudent = async (req, res) => {
   try {
+    const { studentId } = req.params;
+
+    // If a parent is calling this, they may ONLY view their own children — never another student's results.
+    // Staff roles (teacher, admin, etc.) can view any student in their institute, so this check only applies to parents.
+    if (req.user.role === 'parent') {
+      const isOwnChild = (req.user.children || []).some((id) => id.toString() === studentId);
+      if (!isOwnChild) {
+        return res.status(403).json({ message: 'You do not have access to this student' });
+      }
+    }
+
     const results = await ExamResult.find({
       instituteId: req.user.instituteId,
-      studentId: req.params.studentId,
+      studentId,
     })
       .populate('examId', 'name examDate')
       .sort({ createdAt: -1 });

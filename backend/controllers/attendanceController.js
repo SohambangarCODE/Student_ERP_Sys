@@ -69,9 +69,18 @@ exports.getAttendanceByBatchAndDate = async (req, res) => {
 // GET /api/attendance/student/:studentId
 exports.getAttendanceByStudent = async (req, res) => {
   try {
+    const { studentId } = req.params;
+
+    if (req.user.role === 'parent') {
+      const isOwnChild = (req.user.children || []).some((id) => id.toString() === studentId);
+      if (!isOwnChild) {
+        return res.status(403).json({ message: 'You do not have access to this student' });
+      }
+    }
+
     const attendance = await Attendance.find({
       instituteId: req.user.instituteId,
-      studentId: req.params.studentId,
+      studentId,
     }).sort({ date: -1 });
 
     res.json(attendance);

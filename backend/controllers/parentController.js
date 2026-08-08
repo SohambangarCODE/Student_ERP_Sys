@@ -120,3 +120,46 @@ exports.getChildSummary = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+// GET /api/parents/me/children/:studentId/fees
+exports.getChildFeeDetails = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    const isOwnChild = (req.user.children || []).some((id) => id.toString() === studentId);
+    if (!isOwnChild) {
+      return res.status(403).json({ message: 'You do not have access to this student' });
+    }
+
+    const student = await Student.findOne({ _id: studentId, instituteId: req.user.instituteId });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    const structures = await FeeStructure.find({ instituteId: req.user.instituteId, batchId: student.batchId });
+
+    // For each fee structure, compute how much THIS student has paid against it —
+    // same aggregation logic as the defaulter list, just narrowed to one student instead of everyone.
+    const structuresWithBalance = await Promise.all(
+      structures.map(async (structure) => {
+        const payments = await FeePayment.find({
+          instituteId: req.user.instituteId,
+          studentId,
+          feeStructureId: structure._id,
+        });
+        const totalPaid = payments.reduce((sum, p) => sum + p.amountPaid, 0);
+        return {
+          _id: structure._id,
+          totalAmount: structure.totalAmount,
+          installments: structure.installments,
+          totalPaid,
+          balanceDue: structure.totalAmount - totalPaid,
+        };
+      })
+    );
+
+    res.json(structuresWithBalance);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};

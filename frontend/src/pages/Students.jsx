@@ -6,6 +6,7 @@ import Input from "../components/Input";
 import Button from "../components/Button";
 import { getStudents, createStudent, updateStudent } from "../api/studentApi";
 import { getBatches } from "../api/batchApi";
+import { createParent } from '../api/parentApi';
 
 function Students() {
   const [students, setStudents] = useState([]);
@@ -25,10 +26,37 @@ function Students() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
 
+  const [isParentModalOpen, setIsParentModalOpen] = useState(false);
+const [parentTargetStudent, setParentTargetStudent] = useState(null);
+const [parentFormData, setParentFormData] = useState({ name: '', email: '', password: '', phone: '' });
+const [parentSaving, setParentSaving] = useState(false);
+const [parentError, setParentError] = useState('');
+
   useEffect(() => {
     fetchStudents();
     getBatches().then((res) => setBatches(res.data));
   }, []);
+
+  const openParentModal = (student) => {
+  setParentTargetStudent(student);
+  setParentFormData({ name: '', email: '', password: '', phone: '' });
+  setParentError('');
+  setIsParentModalOpen(true);
+};
+
+const handleParentSubmit = async (e) => {
+  e.preventDefault();
+  setParentSaving(true);
+  setParentError('');
+  try {
+    await createParent({ ...parentFormData, studentIds: [parentTargetStudent._id] });
+    setIsParentModalOpen(false);
+  } catch (err) {
+    setParentError(err.response?.data?.message || 'Failed to create parent account');
+  } finally {
+    setParentSaving(false);
+  }
+};
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -110,6 +138,18 @@ function Students() {
         </span>
       ),
     },
+    {
+  key: 'addParent',
+  label: '',
+  render: (row) => (
+    <button
+      onClick={(e) => { e.stopPropagation(); openParentModal(row); }}
+      className="text-xs font-medium text-brand-600 hover:text-brand-700"
+    >
+      + Parent Login
+    </button>
+  ),
+},
   ];
 
   return (
@@ -202,6 +242,48 @@ function Students() {
           </div>
         </form>
       </Modal>
+      <Modal
+  isOpen={isParentModalOpen}
+  onClose={() => setIsParentModalOpen(false)}
+  title={`Add Parent Login for ${parentTargetStudent?.name || ''}`}
+>
+  <form onSubmit={handleParentSubmit} className="space-y-4">
+    <Input
+      label="Parent's Full Name"
+      value={parentFormData.name}
+      onChange={(e) => setParentFormData({ ...parentFormData, name: e.target.value })}
+      required
+    />
+    <Input
+      label="Email"
+      type="email"
+      value={parentFormData.email}
+      onChange={(e) => setParentFormData({ ...parentFormData, email: e.target.value })}
+      required
+    />
+    <Input
+      label="Temporary Password"
+      type="password"
+      value={parentFormData.password}
+      onChange={(e) => setParentFormData({ ...parentFormData, password: e.target.value })}
+      required
+    />
+    <Input
+      label="Phone"
+      value={parentFormData.phone}
+      onChange={(e) => setParentFormData({ ...parentFormData, phone: e.target.value })}
+    />
+
+    {parentError && (
+      <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{parentError}</div>
+    )}
+
+    <div className="flex gap-2 pt-2">
+      <Button type="submit" loading={parentSaving} className="flex-1">Create Parent Login</Button>
+      <Button type="button" variant="secondary" onClick={() => setIsParentModalOpen(false)}>Cancel</Button>
+    </div>
+  </form>
+</Modal>
     </DashboardLayout>
   );
 }
