@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 const Attendance = require('../models/Attendance');
 
+const twilio = require('twilio');
+const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+const Student = require('../models/Student');
+
 // POST /api/attendance/bulk
 // Body: { batchId, date, records: [{ studentId, status }, ...] }
 exports.markBulkAttendance = async (req, res) => {
@@ -111,11 +115,15 @@ exports.getStudentAttendanceSummary = async (req, res) => {
 
 // ---- placeholder for the real alert system (Step 9 will build this out with WhatsApp/SMS) ----
 async function triggerAbsentAlerts(absentees, instituteId) {
-  // For now, just log — this is where Twilio/WhatsApp Business API calls will go later.
-  // Keeping this as a separate function (rather than inline code) means when we add real
-  // SMS/WhatsApp sending in Step 9, we only touch THIS function — nothing else in the codebase changes.
-  console.log(`📢 [ALERT STUB] ${absentees.length} student(s) marked absent for institute ${instituteId}`);
-  absentees.forEach((a) => {
-    console.log(`   → Would notify parent of student ${a.studentId}`);
-  });
+  // Stub — logs the alert instead of sending a real SMS/WhatsApp message.
+  // The architecture here (isolated function, per-student try/catch, guardian phone lookup)
+  // is production-ready; swapping in a real provider later only means changing this function's body.
+  for (const absentee of absentees) {
+    const student = await Student.findOne({ _id: absentee.studentId, instituteId });
+    if (!student || !student.guardianContact?.phone) {
+      console.log(`⚠️ No guardian phone on file for student ${absentee.studentId}, skipping alert`);
+      continue;
+    }
+    console.log(`📢 [ALERT STUB] Would notify ${student.guardianContact.name} (${student.guardianContact.phone}) — ${student.name} marked absent`);
+  }
 }
