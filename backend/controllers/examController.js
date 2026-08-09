@@ -112,7 +112,7 @@ exports.getResultsByStudent = async (req, res) => {
       instituteId: req.user.instituteId,
       studentId,
     })
-      .populate('examId', 'name examDate')
+      .populate('examId', 'name examDate subjects')
       .sort({ createdAt: -1 });
 
     res.json(results);

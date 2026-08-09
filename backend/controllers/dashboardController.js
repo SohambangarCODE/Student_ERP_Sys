@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Student = require('../models/Student');
+const Student = require('../models/Student');       // adjust path if needed
 const Batch = require('../models/Batch');
 const User = require('../models/User');
 const FeeStructure = require('../models/FeeStructure');
@@ -13,8 +13,6 @@ exports.getDashboardStats = async (req, res) => {
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
 
-    // Run everything independent of each other in parallel — none of these queries
-    // depend on another's result, so there's no reason to wait for one before starting the next.
     const [
       totalStudents,
       totalBatches,
@@ -28,7 +26,6 @@ exports.getDashboardStats = async (req, res) => {
       Batch.countDocuments({ instituteId }),
       User.countDocuments({ instituteId, role: { $in: ['branch_admin', 'accountant', 'teacher', 'front_desk'] }, isActive: true }),
 
-      // Total owed vs total collected, institute-wide
       FeeStructure.aggregate([
         { $match: { instituteId } },
         { $group: { _id: null, totalOwed: { $sum: '$totalAmount' } } },
@@ -42,7 +39,6 @@ exports.getDashboardStats = async (req, res) => {
         return { totalOwed, totalCollected, totalPending: totalOwed - totalCollected };
       }),
 
-      // Last 6 months of fee collection, grouped by month — powers the bar chart
       FeePayment.aggregate([
         { $match: { instituteId } },
         {
@@ -55,7 +51,6 @@ exports.getDashboardStats = async (req, res) => {
         { $limit: 6 },
       ]),
 
-      // Today's attendance breakdown — powers the donut chart
       Attendance.aggregate([
         { $match: { instituteId, date: { $gte: todayStart, $lte: todayEnd } } },
         { $group: { _id: '$status', count: { $sum: 1 } } },
@@ -73,15 +68,23 @@ exports.getDashboardStats = async (req, res) => {
     const attendanceCounts = { present: 0, absent: 0, late: 0 };
     todayAttendance.forEach((a) => { attendanceCounts[a._id] = a.count; });
 
-    res.json({
+    const responseData = {
       totalStudents,
       totalBatches,
-      totalStaff,
-      fees: feeTotals,
-      collectionTrend: trend,
+      collectionTrend: [],
       todayAttendance: attendanceCounts,
       recentNotices,
-    });
+    };
+
+    if (['super_admin', 'branch_admin', 'accountant', 'front_desk'].includes(req.user.role)) {
+      responseData.fees = feeTotals;
+      responseData.collectionTrend = trend;
+    }
+    if (['super_admin', 'branch_admin'].includes(req.user.role)) {
+      responseData.totalStaff = totalStaff;
+    }
+
+    res.json(responseData);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

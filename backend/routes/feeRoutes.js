@@ -15,7 +15,7 @@ router.use(protect);
 router.post('/structure', restrictTo('super_admin', 'branch_admin', 'accountant'), createFeeStructure);
 router.get('/structure', getFeeStructures);
 
-router.post('/payment', restrictTo('super_admin', 'branch_admin', 'accountant'), recordPayment);
+router.post('/payment', restrictTo('super_admin', 'branch_admin', 'accountant', 'front_desk'), recordPayment);
 router.get('/payment/student/:studentId', getPaymentsByStudent);
 
 router.get('/defaulters', restrictTo('super_admin', 'branch_admin', 'accountant'), getDefaulters);

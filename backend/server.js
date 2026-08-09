@@ -10,6 +10,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('uploads')); // keep this here — no route dependency, just static file serving
 
 const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
@@ -42,10 +43,13 @@ const parentRoutes = require('./routes/parentRoutes');
 app.use('/api/parents', parentRoutes);
 
 const instituteRoutes = require('./routes/instituteRoutes');
-app.use('/api/institutes', instituteRoutes);
+app.use('/api/institutes', instituteRoutes); // now this is the ONLY mount — declared and used right next to each other
 
 const messageRoutes = require('./routes/messageRoutes');
 app.use('/api/messages', messageRoutes);
+
+const searchRoutes = require('./routes/searchRoutes');
+app.use('/api/search', searchRoutes);
 
 mongoose
   .connect(process.env.MONGO_URI)

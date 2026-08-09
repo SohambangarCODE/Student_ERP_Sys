@@ -17,6 +17,7 @@ import MyResults from "../pages/MyResults";
 import MyAttendance from "../pages/MyAttendance";
 import Messages from "../pages/Messages";
 import MyMessages from "../pages/MyMessages";
+import Settings from "../pages/Settings";
 
 // A real, standalone function — defined here, OUTSIDE and ABOVE AppRoutes,
 // not inside any JSX attribute. This is what was missing before.
@@ -157,6 +158,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["parent"]}>
             <MyMessages />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute allowedRoles={["super_admin", "branch_admin"]}>
+            <Settings />
           </ProtectedRoute>
         }
       />

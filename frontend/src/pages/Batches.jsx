@@ -1,24 +1,34 @@
-import { useState, useEffect } from 'react';
-import DashboardLayout from '../components/DashboardLayout';
-import Table from '../components/Table';
-import Modal from '../components/Modal';
-import Input from '../components/Input';
-import Button from '../components/Button';
-import { getBatches, createBatch, updateBatch } from '../api/batchApi';
+import { useState, useEffect } from "react";
+import DashboardLayout from "../components/DashboardLayout";
+import Table from "../components/Table";
+import Modal from "../components/Modal";
+import Input from "../components/Input";
+import Button from "../components/Button";
+import { getBatches, createBatch, updateBatch } from "../api/batchApi";
+import { useLocation } from "react-router-dom";
 
-const emptySlot = { day: 'Monday', startTime: '16:00', endTime: '17:30' };
-const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const emptySlot = { day: "Monday", startTime: "16:00", endTime: "17:30" };
+const days = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
 
 function Batches() {
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState(null);
-  const [formData, setFormData] = useState({ name: '', schedule: [emptySlot] });
+  const [formData, setFormData] = useState({ name: "", schedule: [emptySlot] });
   const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState('');
+  const [formError, setFormError] = useState("");
+  const location = useLocation();
 
   useEffect(() => {
     fetchBatches();
@@ -30,16 +40,23 @@ function Batches() {
       const res = await getBatches();
       setBatches(res.data);
     } catch (err) {
-      setError('Failed to load batches');
+      setError("Failed to load batches");
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (location.state?.openBatchId && batches.length > 0) {
+      const target = batches.find((b) => b._id === location.state.openBatchId);
+      if (target) openEditModal(target);
+    }
+  }, [location.state, batches]);
+
   const openCreateModal = () => {
     setEditingBatch(null);
-    setFormData({ name: '', schedule: [{ ...emptySlot }] });
-    setFormError('');
+    setFormData({ name: "", schedule: [{ ...emptySlot }] });
+    setFormError("");
     setIsModalOpen(true);
   };
 
@@ -49,7 +66,7 @@ function Batches() {
       name: batch.name,
       schedule: batch.schedule?.length ? batch.schedule : [{ ...emptySlot }],
     });
-    setFormError('');
+    setFormError("");
     setIsModalOpen(true);
   };
 
@@ -61,17 +78,23 @@ function Batches() {
   };
 
   const addSlot = () => {
-    setFormData({ ...formData, schedule: [...formData.schedule, { ...emptySlot }] });
+    setFormData({
+      ...formData,
+      schedule: [...formData.schedule, { ...emptySlot }],
+    });
   };
 
   const removeSlot = (index) => {
-    setFormData({ ...formData, schedule: formData.schedule.filter((_, i) => i !== index) });
+    setFormData({
+      ...formData,
+      schedule: formData.schedule.filter((_, i) => i !== index),
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setFormError('');
+    setFormError("");
     try {
       if (editingBatch) {
         await updateBatch(editingBatch._id, formData);
@@ -81,27 +104,32 @@ function Batches() {
       setIsModalOpen(false);
       fetchBatches();
     } catch (err) {
-      setFormError(err.response?.data?.message || 'Failed to save batch');
+      setFormError(err.response?.data?.message || "Failed to save batch");
     } finally {
       setSaving(false);
     }
   };
 
   const columns = [
-    { key: 'name', label: 'Batch Name' },
+    { key: "name", label: "Batch Name" },
     {
-      key: 'schedule',
-      label: 'Schedule',
+      key: "schedule",
+      label: "Schedule",
       render: (row) => (
         <span className="text-slate-500">
-          {row.schedule?.map((s) => `${s.day.slice(0, 3)} ${s.startTime}`).join(', ') || '—'}
+          {row.schedule
+            ?.map((s) => `${s.day.slice(0, 3)} ${s.startTime}`)
+            .join(", ") || "—"}
         </span>
       ),
     },
     {
-      key: 'teacherId',
-      label: 'Teacher',
-      render: (row) => row.teacherId?.name || <span className="text-slate-400">Unassigned</span>,
+      key: "teacherId",
+      label: "Teacher",
+      render: (row) =>
+        row.teacherId?.name || (
+          <span className="text-slate-400">Unassigned</span>
+        ),
     },
   ];
 
@@ -110,7 +138,9 @@ function Batches() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Batches</h1>
-          <p className="text-sm text-slate-500 mt-1">Manage classes and coaching batches</p>
+          <p className="text-sm text-slate-500 mt-1">
+            Manage classes and coaching batches
+          </p>
         </div>
         <Button onClick={openCreateModal}>+ Add Batch</Button>
       </div>
@@ -131,7 +161,7 @@ function Batches() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingBatch ? 'Edit Batch' : 'Add Batch'}
+        title={editingBatch ? "Edit Batch" : "Add Batch"}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
@@ -143,27 +173,36 @@ function Batches() {
           />
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Schedule</label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Schedule
+            </label>
             <div className="space-y-2">
               {formData.schedule.map((slot, i) => (
-                <div key={i} className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                <div
+                  key={i}
+                  className="flex flex-col sm:flex-row gap-2 sm:items-center"
+                >
                   <select
                     value={slot.day}
-                    onChange={(e) => updateSlot(i, 'day', e.target.value)}
+                    onChange={(e) => updateSlot(i, "day", e.target.value)}
                     className="flex-1 rounded-lg border border-slate-300 px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
                   >
-                    {days.map((d) => <option key={d} value={d}>{d}</option>)}
+                    {days.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
                   </select>
                   <input
                     type="time"
                     value={slot.startTime}
-                    onChange={(e) => updateSlot(i, 'startTime', e.target.value)}
+                    onChange={(e) => updateSlot(i, "startTime", e.target.value)}
                     className="rounded-lg border border-slate-300 px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
                   />
                   <input
                     type="time"
                     value={slot.endTime}
-                    onChange={(e) => updateSlot(i, 'endTime', e.target.value)}
+                    onChange={(e) => updateSlot(i, "endTime", e.target.value)}
                     className="rounded-lg border border-slate-300 px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
                   />
                   {formData.schedule.length > 1 && (
@@ -195,9 +234,13 @@ function Batches() {
 
           <div className="flex gap-2 pt-2">
             <Button type="submit" loading={saving} className="flex-1">
-              {editingBatch ? 'Save Changes' : 'Add Batch'}
+              {editingBatch ? "Save Changes" : "Add Batch"}
             </Button>
-            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsModalOpen(false)}
+            >
               Cancel
             </Button>
           </div>

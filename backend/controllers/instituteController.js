@@ -12,3 +12,41 @@ exports.getMyInstitute = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+
+// PUT /api/institutes/me — update basic institute details (name, address, contact)
+exports.updateMyInstitute = async (req, res) => {
+  try {
+    const { name, address, contactPhone, contactEmail } = req.body;
+    const institute = await Institute.findByIdAndUpdate(
+      req.user.instituteId,
+      { name, address, contactPhone, contactEmail },
+      { new: true, runValidators: true }
+    );
+    res.json(institute);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// POST /api/institutes/me/logo — upload/replace the institute's logo
+exports.uploadLogo = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Store a URL path, not a raw filesystem path — the frontend needs something it can put directly in an <img src>
+    const logoUrl = `/uploads/logos/${req.file.filename}`;
+
+    const institute = await Institute.findByIdAndUpdate(
+      req.user.instituteId,
+      { logoUrl },
+      { new: true }
+    );
+
+    res.json(institute);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
