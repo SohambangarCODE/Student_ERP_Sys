@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import Table from "../components/Table";
 import Modal from "../components/Modal";
@@ -8,6 +8,15 @@ import { getStudents, createStudent, updateStudent } from "../api/studentApi";
 import { getBatches } from "../api/batchApi";
 import { createParent } from "../api/parentApi";
 import { useLocation } from "react-router-dom";
+import { MoreVertical, UserMinus, UserX, Trash2 } from "lucide-react";
+import { createPortal } from "react-dom";
+
+import {
+  removeFromBatch,
+  updateStudentStatus,
+  permanentlyDeleteStudent,
+} from "../api/studentApi";
+import { useAuth } from "../context/AuthContext";
 
 function Students() {
   const [students, setStudents] = useState([]);
@@ -37,6 +46,48 @@ function Students() {
   });
   const [parentSaving, setParentSaving] = useState(false);
   const [parentError, setParentError] = useState("");
+
+  const { user } = useAuth();
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [confirmText, setConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+
+  const handleRemoveFromBatch = async (student) => {
+    if (
+      !window.confirm(
+        `Remove ${student.name} from their batch? Their record and history stay intact.`,
+      )
+    )
+      return;
+    await removeFromBatch(student._id);
+    fetchStudents();
+  };
+
+  const handleMarkDropped = async (student) => {
+    if (
+      !window.confirm(
+        `Mark ${student.name} as dropped? They'll be hidden from active lists but all history is kept.`,
+      )
+    )
+      return;
+    await updateStudentStatus(student._id, "dropped");
+    fetchStudents();
+  };
+
+  const handlePermanentDelete = async () => {
+    if (confirmText !== deleteTarget.name) return; // extra guard, even though the button is already disabled
+    setDeleting(true);
+    try {
+      await permanentlyDeleteStudent(deleteTarget._id);
+      setDeleteTarget(null);
+      setConfirmText("");
+      fetchStudents();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to delete student");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     fetchStudents();
@@ -170,18 +221,17 @@ function Students() {
       ),
     },
     {
-      key: "addParent",
+      key: "actions",
       label: "",
       render: (row) => (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            openParentModal(row);
-          }}
-          className="text-xs font-medium text-brand-600 hover:text-brand-700"
-        >
-          + Parent Login
-        </button>
+        <RowActionsMenu
+          row={row}
+          onAddParent={openParentModal}
+          onRemoveFromBatch={handleRemoveFromBatch}
+          onMarkDropped={handleMarkDropped}
+          onDelete={setDeleteTarget}
+          canDelete={user?.role === "super_admin"}
+        />
       ),
     },
   ];
@@ -296,6 +346,58 @@ function Students() {
           </div>
         </form>
       </Modal>
+
+      <Modal
+        isOpen={!!deleteTarget}
+        onClose={() => {
+          setDeleteTarget(null);
+          setConfirmText("");
+        }}
+        title="Permanently delete student"
+      >
+        {deleteTarget && (
+          <div className="space-y-4">
+            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-3 text-sm text-red-700">
+              This will permanently delete <strong>{deleteTarget.name}</strong>{" "}
+              and all related records: attendance history, exam results, fee
+              payments, and messages. This cannot be undone.
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Type <span className="font-mono">{deleteTarget.name}</span> to
+                confirm
+              </label>
+              <input
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="danger"
+                onClick={handlePermanentDelete}
+                disabled={confirmText !== deleteTarget.name}
+                loading={deleting}
+                className="flex-1"
+              >
+                Delete permanently
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setDeleteTarget(null);
+                  setConfirmText("");
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       <Modal
         isOpen={isParentModalOpen}
         onClose={() => setIsParentModalOpen(false)}
@@ -357,6 +459,111 @@ function Students() {
         </form>
       </Modal>
     </DashboardLayout>
+  );
+}
+
+function RowActionsMenu({
+  row,
+  onAddParent,
+  onRemoveFromBatch,
+  onMarkDropped,
+  onDelete,
+  canDelete,
+}) {
+  const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const buttonRef = useRef(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggleOpen = (e) => {
+    e.stopPropagation();
+    if (!open) {
+      // Read the button's real position on screen, position the menu just below/right-aligned to it
+      const rect = buttonRef.current.getBoundingClientRect();
+      setCoords({ top: rect.bottom + 4, left: rect.right - 208 }); // 208px = menu width (w-52)
+    }
+    setOpen(!open);
+  };
+
+  const wrap = (fn) => (e) => {
+    e.stopPropagation();
+    setOpen(false);
+    fn(row);
+  };
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        onClick={toggleOpen}
+        className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+        aria-label="Row actions"
+      >
+        <MoreVertical size={16} />
+      </button>
+
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{ position: "fixed", top: coords.top, left: coords.left }}
+            className="w-52 bg-white rounded-lg border border-slate-200 shadow-lg py-1 z-50"
+          >
+            <button
+              onClick={wrap(onAddParent)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+            >
+              <span className="text-brand-600 font-medium">+</span> Add parent login
+            </button>
+
+            {row.batchId && (
+              <button
+                onClick={wrap(onRemoveFromBatch)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                <UserMinus size={14} className="text-slate-400" /> Remove from batch
+              </button>
+            )}
+
+            {row.status !== "dropped" && (
+              <button
+                onClick={wrap(onMarkDropped)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                <UserX size={14} className="text-amber-500" /> Mark as dropped
+              </button>
+            )}
+
+            {canDelete && (
+              <>
+                <div className="my-1 border-t border-slate-100" />
+                <button
+                  onClick={wrap(onDelete)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 size={14} /> Delete permanently
+                </button>
+              </>
+            )}
+          </div>,
+          document.body
+        )}
+    </>
   );
 }
 

@@ -1,4 +1,90 @@
 const Student = require('../models/Student');
+const Batch = require('../models/Batch');
+const Attendance = require('../models/Attendance');
+const ExamResult = require('../models/ExamResult');
+const FeePayment = require('../models/FeePayment');
+const User = require('../models/User');
+const Message = require('../models/Message');
+
+
+// PUT /api/students/:id/remove-batch — unassign from batch, keep everything else intact
+exports.removeFromBatch = async (req, res) => {
+  try {
+    const student = await Student.findOneAndUpdate(
+      { _id: req.params.id, instituteId: req.user.instituteId },
+      { batchId: null },
+      { new: true }
+    );
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+    res.json(student);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+
+// PUT /api/students/:id/status — soft delete via status change (e.g. mark as 'dropped')
+// This is the SAFE, reversible-in-spirit option — all history stays intact, student just
+// stops showing up in active rosters, attendance-marking lists, fee defaulter lists, etc.
+exports.updateStudentStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const validStatuses = ['active', 'inactive', 'graduated', 'dropped'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const student = await Student.findOneAndUpdate(
+      { _id: req.params.id, instituteId: req.user.instituteId },
+      { status },
+      { new: true }
+    );
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+    res.json(student);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// DELETE /api/students/:id/permanent — THE destructive option, cascades across every related collection
+exports.permanentlyDeleteStudent = async (req, res) => {
+  try {
+    const student = await Student.findOne({ _id: req.params.id, instituteId: req.user.instituteId });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    const { instituteId } = req.user;
+    const studentId = student._id;
+
+    // Delete every record that references this student, across every module we've built.
+    // Order doesn't matter here since none of these deletions depend on each other completing first —
+    // but we still run them as a clear, explicit list so it's obvious exactly what gets touched.
+    await Promise.all([
+      Attendance.deleteMany({ instituteId, studentId }),
+      ExamResult.deleteMany({ instituteId, studentId }),
+      FeePayment.deleteMany({ instituteId, studentId }),
+      Message.deleteMany({ instituteId, studentId }),
+      // Remove this student's ID from any parent account's `children` array,
+      // rather than deleting the parent account itself — a parent may have other children.
+      User.updateMany(
+        { instituteId, children: studentId },
+        { $pull: { children: studentId } }
+      ),
+    ]);
+
+    await Student.deleteOne({ _id: studentId });
+
+    res.json({ message: 'Student and all related records permanently deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 
 // POST /api/students
 exports.createStudent = async (req, res) => {

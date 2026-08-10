@@ -19,7 +19,7 @@ function Messages() {
 
   const openThread = async (thread) => {
     setActiveThread(thread);
-    const res = await getThread(thread.studentId, thread.parentId);
+    const res = await getThread(thread.studentId, { parentId: thread.parentId });
     setMessages(res.data);
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
   };
@@ -31,7 +31,7 @@ function Messages() {
     try {
       await sendMessage({ studentId: activeThread.studentId, parentId: activeThread.parentId, content: text });
       setText('');
-      const res = await getThread(activeThread.studentId, activeThread.parentId);
+      const res = await getThread(thread.studentId, { parentId: thread.parentId });
       setMessages(res.data);
       getAllThreads().then((r) => setThreads(r.data)); // refresh unread counts/last message in the list
     } finally {

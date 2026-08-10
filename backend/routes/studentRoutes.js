@@ -7,6 +7,9 @@ const {
   getStudentById,
   updateStudent,
   deleteStudent,
+  removeFromBatch,
+  updateStudentStatus,
+  permanentlyDeleteStudent,
 } = require('../controllers/studentController');
 
 router.use(protect); // every route below this line requires a valid JWT
@@ -16,5 +19,9 @@ router.get('/', getStudents); // any logged-in role can view (we'll refine per-r
 router.get('/:id', getStudentById);
 router.put('/:id', restrictTo('super_admin', 'branch_admin', 'front_desk'), updateStudent);
 router.delete('/:id', restrictTo('super_admin', 'branch_admin'), deleteStudent);
+
+router.put('/:id/remove-batch', restrictTo('super_admin', 'branch_admin', 'front_desk'), removeFromBatch);
+router.put('/:id/status', restrictTo('super_admin', 'branch_admin'), updateStudentStatus);
+router.delete('/:id/permanent', restrictTo('super_admin'), permanentlyDeleteStudent); // only the top role can do this
 
 module.exports = router;
