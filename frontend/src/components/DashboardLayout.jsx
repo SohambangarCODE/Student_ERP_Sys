@@ -69,7 +69,7 @@ const NAV_BY_ROLE = {
     "messages",
     "settings",
   ],
-  accountant: ["overview", "fees", "notices"],
+  accountant: ["overview", "fees", "notices", "settings"],
   teacher: [
     "overview",
     "students",
@@ -78,8 +78,9 @@ const NAV_BY_ROLE = {
     "exams",
     "notices",
     "messages",
+    "settings",
   ],
-  front_desk: ["overview", "students", "fees", "notices"],
+  front_desk: ["overview", "students", "fees", "notices", "settings"],
   parent: [
     "overview",
     "myFees",
@@ -87,6 +88,7 @@ const NAV_BY_ROLE = {
     "myAttendance",
     "myMessages",
     "notices",
+    "settings",
   ],
 };
 

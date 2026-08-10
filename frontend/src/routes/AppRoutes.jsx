@@ -73,16 +73,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/fees"
-        element={
-          <ProtectedRoute
-            allowedRoles={["super_admin", "branch_admin", "accountant"]}
-          >
-            <Fees />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/fees" element={<ProtectedRoute allowedRoles={['super_admin', 'branch_admin', 'accountant', 'front_desk']}><Fees /></ProtectedRoute>} />
       <Route
         path="/attendance"
         element={
@@ -161,14 +152,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute allowedRoles={["super_admin", "branch_admin"]}>
-            <Settings />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route
         path="*"
         element={
