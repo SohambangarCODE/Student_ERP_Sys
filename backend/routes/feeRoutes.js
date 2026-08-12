@@ -9,6 +9,7 @@ const {
   getDefaulters,
 } = require('../controllers/feeController');
 const { createRazorpayOrder, verifyRazorpayPayment } = require('../controllers/feeController');
+const { updateFeeStructure } = require('../controllers/feeController');
 
 router.use(protect);
 
@@ -19,6 +20,8 @@ router.post('/payment', restrictTo('super_admin', 'branch_admin', 'accountant', 
 router.get('/payment/student/:studentId', getPaymentsByStudent);
 
 router.get('/defaulters', restrictTo('super_admin', 'branch_admin', 'accountant'), getDefaulters);
+
+router.put('/structure/:id', restrictTo('super_admin', 'branch_admin', 'accountant'), updateFeeStructure);
 
 router.post('/razorpay/order', createRazorpayOrder);
 router.post('/razorpay/verify', verifyRazorpayPayment);

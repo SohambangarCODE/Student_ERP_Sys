@@ -15,6 +15,9 @@ import { getBatches } from "../api/batchApi";
 import { getStudents } from "../api/studentApi";
 import { createRazorpayOrder, verifyRazorpayPayment } from "../api/razorpayApi";
 import { useAuth } from "../context/AuthContext";
+import { updateFeeStructure } from "../api/feeApi";
+import { generateFeeReceipt } from "../utils/generateFeeReceipt";
+import { getMyInstitute } from "../api/instituteApi";
 
 function Fees() {
   const [activeTab, setActiveTab] = useState("structures");
@@ -60,6 +63,7 @@ function FeeStructuresTab() {
     totalAmount: "",
     installments: [{ label: "Installment 1", amount: "", dueDate: "" }],
   });
+  const [editingStructure, setEditingStructure] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -80,10 +84,26 @@ function FeeStructuresTab() {
   };
 
   const openCreateModal = () => {
+    setEditingStructure(null);
     setFormData({
       batchId: batches[0]?._id || "",
       totalAmount: "",
       installments: [{ label: "Installment 1", amount: "", dueDate: "" }],
+    });
+    setError("");
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (structure) => {
+    setEditingStructure(structure);
+    setFormData({
+      batchId: structure.batchId?._id || structure.batchId || "",
+      totalAmount: structure.totalAmount,
+      installments: structure.installments.map((i) => ({
+        label: i.label,
+        amount: i.amount,
+        dueDate: i.dueDate ? i.dueDate.split("T")[0] : "",
+      })),
     });
     setError("");
     setIsModalOpen(true);
@@ -114,18 +134,25 @@ function FeeStructuresTab() {
     setSaving(true);
     setError("");
     try {
-      await createFeeStructure({
+      const payload = {
         ...formData,
         totalAmount: Number(formData.totalAmount),
         installments: formData.installments.map((i) => ({
           ...i,
           amount: Number(i.amount),
         })),
-      });
+      };
+
+      if (editingStructure) {
+        await updateFeeStructure(editingStructure._id, payload);
+      } else {
+        await createFeeStructure(payload);
+      }
+
       setIsModalOpen(false);
       loadData();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to create fee structure");
+      setError(err.response?.data?.message || "Failed to save fee structure");
     } finally {
       setSaving(false);
     }
@@ -161,6 +188,7 @@ function FeeStructuresTab() {
         <Table
           columns={columns}
           data={structures}
+          onRowClick={openEditModal}
           emptyMessage="No fee structures created yet."
         />
       )}
@@ -168,7 +196,7 @@ function FeeStructuresTab() {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="New Fee Structure"
+        title={editingStructure ? "Edit Fee Structure" : "New Fee Structure"}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -254,7 +282,7 @@ function FeeStructuresTab() {
 
           <div className="flex gap-2 pt-2">
             <Button type="submit" loading={saving} className="flex-1">
-              Create
+              {editingStructure ? "Save Changes" : "Create"}
             </Button>
             <Button
               type="button"
@@ -333,6 +361,12 @@ function RecordPaymentTab() {
     }
   };
 
+  const [institute, setInstitute] = useState(null);
+
+  useEffect(() => {
+    getMyInstitute().then((res) => setInstitute(res.data));
+  }, []);
+
   useEffect(() => {
     Promise.all([getStudents(), getFeeStructures()]).then(([sRes, fRes]) => {
       setStudents(sRes.data);
@@ -352,6 +386,27 @@ function RecordPaymentTab() {
       setMessage({
         type: "success",
         text: `Payment recorded. Receipt: ${res.data.receiptNumber}`,
+      });
+      // Build the same style receipt an admin's manual entry gets, same as the parent's online payment
+      const student = students.find((s) => s._id === formData.studentId);
+      const selectedStructure = structures.find(
+        (s) => s._id === formData.feeStructureId,
+      );
+      const totalPaid =
+        (selectedStructure?.totalPaid || 0) + Number(formData.amountPaid);
+      // Note: structures list here doesn't carry totalPaid by default (that's specific to the parent-facing
+      // getChildFeeDetails endpoint) — for the admin side we approximate using what's on screen. If this
+      // number ever looks off, it's worth adding a totalPaid field to getFeeStructures too, for consistency.
+
+      await generateFeeReceipt({
+        institute,
+        student,
+        payment: res.data,
+        feeStructure: {
+          totalAmount: selectedStructure?.totalAmount || 0,
+          totalPaid,
+          balanceDue: (selectedStructure?.totalAmount || 0) - totalPaid,
+        },
       });
       setFormData({
         studentId: "",

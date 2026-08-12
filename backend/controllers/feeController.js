@@ -11,6 +11,28 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+
+// PUT /api/fees/structure/:id
+exports.updateFeeStructure = async (req, res) => {
+  try {
+    const { batchId, totalAmount, installments } = req.body;
+
+    const structure = await FeeStructure.findOneAndUpdate(
+      { _id: req.params.id, instituteId: req.user.instituteId },
+      { batchId, totalAmount, installments },
+      { new: true, runValidators: true }
+    ).populate('batchId', 'name');
+
+    if (!structure) {
+      return res.status(404).json({ message: 'Fee structure not found' });
+    }
+
+    res.json(structure);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 // POST /api/fees/razorpay/order
 // Step 1 of the flow — create an order with Razorpay, return its ID to the frontend
 exports.createRazorpayOrder = async (req, res) => {
