@@ -11,6 +11,7 @@ const {
   updateStudentStatus,
   permanentlyDeleteStudent,
 } = require('../controllers/studentController');
+const { unlinkParent } = require('../controllers/studentController');
 
 router.use(protect); // every route below this line requires a valid JWT
 
@@ -23,5 +24,6 @@ router.delete('/:id', restrictTo('super_admin', 'branch_admin'), deleteStudent);
 router.put('/:id/remove-batch', restrictTo('super_admin', 'branch_admin', 'front_desk'), removeFromBatch);
 router.put('/:id/status', restrictTo('super_admin', 'branch_admin'), updateStudentStatus);
 router.delete('/:id/permanent', restrictTo('super_admin'), permanentlyDeleteStudent); // only the top role can do this
+router.put('/:id/unlink-parent', restrictTo('super_admin', 'branch_admin', 'front_desk'), unlinkParent);
 
 module.exports = router;

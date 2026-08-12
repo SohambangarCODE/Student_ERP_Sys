@@ -4,18 +4,20 @@ import Table from "../components/Table";
 import Modal from "../components/Modal";
 import Input from "../components/Input";
 import Button from "../components/Button";
-import { getStudents, createStudent, updateStudent } from "../api/studentApi";
-import { getBatches } from "../api/batchApi";
-import { createParent } from "../api/parentApi";
-import { useLocation } from "react-router-dom";
-import { MoreVertical, UserMinus, UserX, Trash2 } from "lucide-react";
-import { createPortal } from "react-dom";
-
 import {
+  getStudents,
+  createStudent,
+  updateStudent,
   removeFromBatch,
   updateStudentStatus,
   permanentlyDeleteStudent,
+  unlinkParent,
 } from "../api/studentApi";
+import { getBatches } from "../api/batchApi";
+import { createParent } from "../api/parentApi";
+import { useLocation } from "react-router-dom";
+import { MoreVertical, UserMinus, UserX, Trash2, Check } from "lucide-react";
+import { createPortal } from "react-dom";
 import { useAuth } from "../context/AuthContext";
 
 function Students() {
@@ -51,6 +53,12 @@ function Students() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [actionMessage, setActionMessage] = useState(null);
+
+  const showMessage = (type, text) => {
+    setActionMessage({ type, text });
+    setTimeout(() => setActionMessage(null), 4000);
+  };
 
   const handleRemoveFromBatch = async (student) => {
     if (
@@ -59,9 +67,44 @@ function Students() {
       )
     )
       return;
-    await removeFromBatch(student._id);
-    fetchStudents();
+    try {
+      await removeFromBatch(student._id);
+      showMessage("success", `${student.name} removed from their batch.`);
+      fetchStudents();
+    } catch (err) {
+      showMessage("error", "Failed to remove from batch");
+    }
   };
+
+  const handleUnlinkParent = async (student, parent) => {
+  if (
+    !window.confirm(
+      `Unlink ${parent.name} from ${student.name}? They will lose access to this student's data.`,
+    )
+  )
+    return;
+  try {
+    await unlinkParent(student._id, parent._id);
+    showMessage(
+      "success",
+      `${parent.name} has been unlinked from ${student.name}.`,
+    );
+    // Update local state immediately, instead of waiting for a full refetch —
+    // removes any lag between "unlink succeeded" and "the UI actually shows it."
+    setStudents((prev) =>
+      prev.map((s) =>
+        s._id === student._id
+          ? { ...s, parentIds: s.parentIds.filter((p) => p._id !== parent._id) }
+          : s
+      )
+    );
+  } catch (err) {
+    showMessage(
+      "error",
+      err.response?.data?.message || "Failed to unlink parent",
+    );
+  }
+};
 
   const handleMarkDropped = async (student) => {
     if (
@@ -70,20 +113,29 @@ function Students() {
       )
     )
       return;
-    await updateStudentStatus(student._id, "dropped");
-    fetchStudents();
+    try {
+      await updateStudentStatus(student._id, "dropped");
+      showMessage("success", `${student.name} marked as dropped.`);
+      fetchStudents();
+    } catch (err) {
+      showMessage("error", "Failed to update status");
+    }
   };
 
   const handlePermanentDelete = async () => {
-    if (confirmText !== deleteTarget.name) return; // extra guard, even though the button is already disabled
+    if (confirmText !== deleteTarget.name) return;
     setDeleting(true);
     try {
       await permanentlyDeleteStudent(deleteTarget._id);
+      showMessage("success", `${deleteTarget.name} was permanently deleted.`);
       setDeleteTarget(null);
       setConfirmText("");
       fetchStudents();
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to delete student");
+      showMessage(
+        "error",
+        err.response?.data?.message || "Failed to delete student",
+      );
     } finally {
       setDeleting(false);
     }
@@ -122,6 +174,11 @@ function Students() {
         studentIds: [parentTargetStudent._id],
       });
       setIsParentModalOpen(false);
+      showMessage(
+        "success",
+        `Parent login created for ${parentTargetStudent.name}.`,
+      );
+      fetchStudents();
     } catch (err) {
       setParentError(
         err.response?.data?.message || "Failed to create parent account",
@@ -143,7 +200,6 @@ function Students() {
     }
   };
 
-  // Creating a NEW student — form starts empty, no existing student to read from
   const openCreateModal = () => {
     setEditingStudent(null);
     setFormData({
@@ -157,7 +213,6 @@ function Students() {
     setIsModalOpen(true);
   };
 
-  // Editing an EXISTING student — form pre-fills from the row that was clicked
   const openEditModal = (student) => {
     setEditingStudent(student);
     setFormData({
@@ -176,8 +231,6 @@ function Students() {
     setSaving(true);
     setFormError("");
 
-    // Mongoose's batchId field expects either a valid ObjectId or null — never an empty string.
-    // The "No batch assigned" option in our dropdown submits "" by default, so we convert it here.
     const payload = { ...formData, batchId: formData.batchId || null };
 
     try {
@@ -221,6 +274,18 @@ function Students() {
       ),
     },
     {
+      key: "parentLinked",
+      label: "Parent",
+      render: (row) =>
+        row.parentIds?.length > 0 ? (
+          <span className="inline-flex items-center gap-1 text-xs text-green-700">
+            <Check size={12} /> Linked
+          </span>
+        ) : (
+          <span className="text-xs text-slate-400">Not linked</span>
+        ),
+    },
+    {
       key: "actions",
       label: "",
       render: (row) => (
@@ -230,6 +295,7 @@ function Students() {
           onRemoveFromBatch={handleRemoveFromBatch}
           onMarkDropped={handleMarkDropped}
           onDelete={setDeleteTarget}
+          onUnlinkParent={handleUnlinkParent}
           canDelete={user?.role === "super_admin"}
         />
       ),
@@ -247,6 +313,18 @@ function Students() {
         </div>
         <Button onClick={openCreateModal}>+ Add Student</Button>
       </div>
+
+      {actionMessage && (
+        <div
+          className={`rounded-lg px-3 py-2 text-sm border mb-4 ${
+            actionMessage.type === "success"
+              ? "bg-green-50 border-green-200 text-green-700"
+              : "bg-red-50 border-red-200 text-red-700"
+          }`}
+        >
+          {actionMessage.text}
+        </div>
+      )}
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
 
@@ -403,6 +481,21 @@ function Students() {
         onClose={() => setIsParentModalOpen(false)}
         title={`Add Parent Login for ${parentTargetStudent?.name || ""}`}
       >
+        {parentTargetStudent?.parentIds?.length > 0 && (
+          <div className="rounded-lg bg-slate-50 border border-slate-200 px-3 py-3 text-sm text-slate-700 mb-4">
+            <p className="font-medium mb-1">Already linked:</p>
+            {parentTargetStudent.parentIds.map((p) => (
+              <p key={p._id} className="flex items-center gap-1.5">
+                <Check size={13} className="text-green-600" />
+                {p.name} <span className="text-slate-400">({p.email})</span>
+              </p>
+            ))}
+            <p className="text-xs text-slate-500 mt-2">
+              You can still add another parent below (e.g. the other guardian).
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleParentSubmit} className="space-y-4">
           <Input
             label="Parent's Full Name"
@@ -446,7 +539,9 @@ function Students() {
 
           <div className="flex gap-2 pt-2">
             <Button type="submit" loading={parentSaving} className="flex-1">
-              Create Parent Login
+              {parentTargetStudent?.parentIds?.length > 0
+                ? "Add Another Parent Login"
+                : "Create Parent Login"}
             </Button>
             <Button
               type="button"
@@ -468,6 +563,7 @@ function RowActionsMenu({
   onRemoveFromBatch,
   onMarkDropped,
   onDelete,
+  onUnlinkParent,
   canDelete,
 }) {
   const [open, setOpen] = useState(false);
@@ -493,9 +589,8 @@ function RowActionsMenu({
   const toggleOpen = (e) => {
     e.stopPropagation();
     if (!open) {
-      // Read the button's real position on screen, position the menu just below/right-aligned to it
       const rect = buttonRef.current.getBoundingClientRect();
-      setCoords({ top: rect.bottom + 4, left: rect.right - 208 }); // 208px = menu width (w-52)
+      setCoords({ top: rect.bottom + 4, left: rect.right - 224 });
     }
     setOpen(!open);
   };
@@ -522,13 +617,45 @@ function RowActionsMenu({
           <div
             ref={menuRef}
             style={{ position: "fixed", top: coords.top, left: coords.left }}
-            className="w-52 bg-white rounded-lg border border-slate-200 shadow-lg py-1 z-50"
+            className="w-56 bg-white rounded-lg border border-slate-200 shadow-lg py-1 z-50"
           >
+            {row.parentIds?.length > 0 && (
+              <div className="px-3 py-2 border-b border-slate-100">
+                <p className="text-xs font-medium text-slate-500 mb-1">
+                  Linked parent{row.parentIds.length > 1 ? "s" : ""}
+                </p>
+                {row.parentIds.map((p) => (
+                  <div
+                    key={p._id}
+                    className="flex items-center justify-between gap-2 py-0.5"
+                  >
+                    <span className="text-sm text-slate-900 flex items-center gap-1 truncate">
+                      <Check size={13} className="text-green-600 shrink-0" />{" "}
+                      {p.name}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpen(false);
+                        onUnlinkParent(row, p);
+                      }}
+                      className="text-xs text-red-500 hover:text-red-700 shrink-0"
+                    >
+                      Unlink
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <button
               onClick={wrap(onAddParent)}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
             >
-              <span className="text-brand-600 font-medium">+</span> Add parent login
+              <span className="text-brand-600 font-medium">+</span>
+              {row.parentIds?.length > 0
+                ? "Add another parent login"
+                : "Add parent login"}
             </button>
 
             {row.batchId && (
@@ -536,7 +663,8 @@ function RowActionsMenu({
                 onClick={wrap(onRemoveFromBatch)}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
               >
-                <UserMinus size={14} className="text-slate-400" /> Remove from batch
+                <UserMinus size={14} className="text-slate-400" /> Remove from
+                batch
               </button>
             )}
 
@@ -561,7 +689,7 @@ function RowActionsMenu({
               </>
             )}
           </div>,
-          document.body
+          document.body,
         )}
     </>
   );

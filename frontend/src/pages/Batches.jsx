@@ -6,6 +6,7 @@ import Input from "../components/Input";
 import Button from "../components/Button";
 import { getBatches, createBatch, updateBatch } from "../api/batchApi";
 import { useLocation } from "react-router-dom";
+import { getStaff } from "../api/staffApi";
 
 const emptySlot = { day: "Monday", startTime: "16:00", endTime: "17:30" };
 const days = [
@@ -20,6 +21,7 @@ const days = [
 
 function Batches() {
   const [batches, setBatches] = useState([]);
+  const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -32,6 +34,9 @@ function Batches() {
 
   useEffect(() => {
     fetchBatches();
+    getStaff().then((res) => {
+      setTeachers(res.data.filter((s) => s.role === "teacher"));
+    });
   }, []);
 
   const fetchBatches = async () => {
@@ -64,6 +69,7 @@ function Batches() {
     setEditingBatch(batch);
     setFormData({
       name: batch.name,
+      teacherId: batch.teacherId?._id || batch.teacherId || "",
       schedule: batch.schedule?.length ? batch.schedule : [{ ...emptySlot }],
     });
     setFormError("");
@@ -95,11 +101,14 @@ function Batches() {
     e.preventDefault();
     setSaving(true);
     setFormError("");
+
+    const payload = { ...formData, teacherId: formData.teacherId || null };
+
     try {
       if (editingBatch) {
-        await updateBatch(editingBatch._id, formData);
+        await updateBatch(editingBatch._id, payload);
       } else {
-        await createBatch(formData);
+        await createBatch(payload);
       }
       setIsModalOpen(false);
       fetchBatches();
@@ -164,6 +173,30 @@ function Batches() {
         title={editingBatch ? "Edit Batch" : "Add Batch"}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Assigned Teacher
+            </label>
+            <select
+              value={formData.teacherId}
+              onChange={(e) =>
+                setFormData({ ...formData, teacherId: e.target.value })
+              }
+              className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+            >
+              <option value="">No teacher assigned</option>
+              {teachers.map((t) => (
+                <option key={t._id} value={t._id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+            {teachers.length === 0 && (
+              <p className="text-xs text-slate-400 mt-1.5">
+                No teachers added yet — create one in Staff first.
+              </p>
+            )}
+          </div>
           <Input
             label="Batch Name"
             value={formData.name}

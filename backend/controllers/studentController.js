@@ -1,11 +1,10 @@
-const Student = require('../models/Student');
-const Batch = require('../models/Batch');
-const Attendance = require('../models/Attendance');
-const ExamResult = require('../models/ExamResult');
-const FeePayment = require('../models/FeePayment');
-const User = require('../models/User');
-const Message = require('../models/Message');
-
+const Student = require("../models/Student");
+const Batch = require("../models/Batch");
+const Attendance = require("../models/Attendance");
+const ExamResult = require("../models/ExamResult");
+const FeePayment = require("../models/FeePayment");
+const User = require("../models/User");
+const Message = require("../models/Message");
 
 // PUT /api/students/:id/remove-batch — unassign from batch, keep everything else intact
 exports.removeFromBatch = async (req, res) => {
@@ -13,17 +12,53 @@ exports.removeFromBatch = async (req, res) => {
     const student = await Student.findOneAndUpdate(
       { _id: req.params.id, instituteId: req.user.instituteId },
       { batchId: null },
-      { new: true }
+      { new: true },
     );
     if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
+      return res.status(404).json({ message: "Student not found" });
     }
     res.json(student);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
+// PUT /api/students/:id/unlink-parent
+// Body: { parentId }
+exports.unlinkParent = async (req, res) => {
+  try {
+    const { parentId } = req.body;
+    const { id: studentId } = req.params;
+
+    const student = await Student.findOne({
+      _id: studentId,
+      instituteId: req.user.instituteId,
+    });
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Remove the link from BOTH sides of the relationship — this is exactly the mistake
+    // we just found and had to fix by hand in Atlas: only fixing Student.parentIds and
+    // forgetting User.children leaves the parent still able to see a child that isn't theirs.
+    await Student.updateOne(
+      { _id: studentId },
+      { $pull: { parentIds: parentId } },
+    );
+    await User.updateOne(
+      { _id: parentId, instituteId: req.user.instituteId },
+      { $pull: { children: studentId } },
+    );
+
+    const updated = await Student.findById(studentId).populate(
+      "parentIds",
+      "name email phone",
+    );
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
 
 // PUT /api/students/:id/status — soft delete via status change (e.g. mark as 'dropped')
 // This is the SAFE, reversible-in-spirit option — all history stays intact, student just
@@ -31,31 +66,34 @@ exports.removeFromBatch = async (req, res) => {
 exports.updateStudentStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    const validStatuses = ['active', 'inactive', 'graduated', 'dropped'];
+    const validStatuses = ["active", "inactive", "graduated", "dropped"];
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
+      return res.status(400).json({ message: "Invalid status" });
     }
 
     const student = await Student.findOneAndUpdate(
       { _id: req.params.id, instituteId: req.user.instituteId },
       { status },
-      { new: true }
+      { new: true },
     );
     if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
+      return res.status(404).json({ message: "Student not found" });
     }
     res.json(student);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
 // DELETE /api/students/:id/permanent — THE destructive option, cascades across every related collection
 exports.permanentlyDeleteStudent = async (req, res) => {
   try {
-    const student = await Student.findOne({ _id: req.params.id, instituteId: req.user.instituteId });
+    const student = await Student.findOne({
+      _id: req.params.id,
+      instituteId: req.user.instituteId,
+    });
     if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
+      return res.status(404).json({ message: "Student not found" });
     }
 
     const { instituteId } = req.user;
@@ -73,18 +111,19 @@ exports.permanentlyDeleteStudent = async (req, res) => {
       // rather than deleting the parent account itself — a parent may have other children.
       User.updateMany(
         { instituteId, children: studentId },
-        { $pull: { children: studentId } }
+        { $pull: { children: studentId } },
       ),
     ]);
 
     await Student.deleteOne({ _id: studentId });
 
-    res.json({ message: 'Student and all related records permanently deleted' });
+    res.json({
+      message: "Student and all related records permanently deleted",
+    });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
-
 
 // POST /api/students
 exports.createStudent = async (req, res) => {
@@ -96,9 +135,11 @@ exports.createStudent = async (req, res) => {
     res.status(201).json(student);
   } catch (err) {
     if (err.code === 11000) {
-      return res.status(409).json({ message: 'Admission number already exists in this institute' });
+      return res
+        .status(409)
+        .json({ message: "Admission number already exists in this institute" });
     }
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
@@ -106,11 +147,12 @@ exports.createStudent = async (req, res) => {
 exports.getStudents = async (req, res) => {
   try {
     const students = await Student.find({ instituteId: req.user.instituteId })
-      .populate('batchId', 'name')
+      .populate("batchId", "name")
+      .populate("parentIds", "name email phone")
       .sort({ createdAt: -1 });
     res.json(students);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
@@ -120,14 +162,16 @@ exports.getStudentById = async (req, res) => {
     const student = await Student.findOne({
       _id: req.params.id,
       instituteId: req.user.instituteId, // <-- this is the line that stops Institute A from fetching Institute B's student by guessing an ID
-    }).populate('batchId', 'name').populate('parentIds', 'name email phone');
+    })
+      .populate("batchId", "name")
+      .populate("parentIds", "name email phone");
 
     if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
+      return res.status(404).json({ message: "Student not found" });
     }
     res.json(student);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
@@ -139,15 +183,15 @@ exports.updateStudent = async (req, res) => {
     const student = await Student.findOneAndUpdate(
       { _id: req.params.id, instituteId: req.user.instituteId },
       req.body,
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
+      return res.status(404).json({ message: "Student not found" });
     }
     res.json(student);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
@@ -160,10 +204,10 @@ exports.deleteStudent = async (req, res) => {
     });
 
     if (!student) {
-      return res.status(404).json({ message: 'Student not found' });
+      return res.status(404).json({ message: "Student not found" });
     }
-    res.json({ message: 'Student deleted' });
+    res.json({ message: "Student deleted" });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
