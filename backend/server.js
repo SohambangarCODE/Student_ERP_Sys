@@ -93,7 +93,7 @@ app.get("/health", (req, res) => {
 // ── SPA catch-all ─────────────────────────────────────────────────────────────
 // Must come AFTER all /api/* routes so API routes are never swallowed.
 // Sends index.html for any non-API GET request so React Router can handle it.
-app.get("*", (req, res) => {
+app.get("/{*path}", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
@@ -109,6 +109,8 @@ mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err.message));
+
+  
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
