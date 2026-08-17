@@ -333,7 +333,7 @@ function InstituteSection() {
           <div className="h-20 w-20 rounded-xl border-2 border-dashed border-slate-300 bg-white flex items-center justify-center overflow-hidden shrink-0">
             {institute.logoUrl ? (
               <img 
-                src={`http://localhost:5000${institute.logoUrl}`} 
+                src={institute.logoUrl} 
                 alt="Institute logo" 
                 className="h-full w-full object-contain p-2" 
               />

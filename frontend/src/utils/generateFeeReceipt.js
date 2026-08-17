@@ -23,7 +23,7 @@ export async function generateFeeReceipt({ institute, student, payment, feeStruc
   let logoImg = null;
   if (institute?.logoUrl) {
     try {
-      logoImg = await loadImage(`http://localhost:5000${institute.logoUrl}`);
+      logoImg = await loadImage(institute.logoUrl);
     } catch {
       logoImg = null;
     }

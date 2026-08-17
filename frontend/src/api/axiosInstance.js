@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  // Relative URL works in both local dev (served by Express on :5000) and
+  // production (served on the same Render domain). No env variable needed.
+  baseURL: '/api',
 });
 
 // This runs before EVERY request made through this instance.

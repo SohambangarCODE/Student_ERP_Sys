@@ -22,7 +22,7 @@ export async function generateReportCard({ institute, student, examResult }) {
   let logoImg = null;
   if (institute?.logoUrl) {
     try {
-      logoImg = await loadImage(`http://localhost:5000${institute.logoUrl}`);
+      logoImg = await loadImage(institute.logoUrl);
     } catch {
       logoImg = null; // if it fails to load, just skip it rather than breaking the whole PDF
     }
