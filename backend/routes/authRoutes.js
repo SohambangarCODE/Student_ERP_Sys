@@ -1,8 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const { registerInstitute, login } = require('../controllers/authController');
+const { authIpLimiter } = require('../middleware/rateLimiter');
+const validate = require('../middleware/validate');
+const { loginSchema, registerInstituteSchema } = require('../validations/auth.validation');
 
-router.post('/register-institute', registerInstitute);
-router.post('/login', login);
+// Auth routes get the strictest limiter (per-IP) + Joi schema validation.
+// The account-level exponential backoff is applied inside authController.login itself
+// because it needs access to the email value after validation runs.
+router.post('/register-institute', authIpLimiter, validate(registerInstituteSchema), registerInstitute);
+router.post('/login', authIpLimiter, validate(loginSchema), login);
 
 module.exports = router;

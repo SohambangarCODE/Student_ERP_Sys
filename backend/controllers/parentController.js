@@ -8,7 +8,7 @@ const Notice = require('../models/Notice');
 
 
 // GET /api/parents/search?email=... — find an existing parent account by email, within this institute
-exports.searchParentByEmail = async (req, res) => {
+exports.searchParentByEmail = async (req, res, next) => {
   try {
     const { email } = req.query;
     if (!email) {
@@ -27,13 +27,13 @@ exports.searchParentByEmail = async (req, res) => {
 
     res.json(parent);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // PUT /api/parents/link
 // Body: { parentId, studentId } — links an EXISTING parent account to another student, both sides atomically
-exports.linkExistingParent = async (req, res) => {
+exports.linkExistingParent = async (req, res, next) => {
   try {
     const { parentId, studentId } = req.body;
 
@@ -55,12 +55,12 @@ exports.linkExistingParent = async (req, res) => {
     const updatedStudent = await Student.findById(studentId).populate('parentIds', 'name email phone');
     res.json(updatedStudent);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // POST /api/parents  — admin/staff creates a parent account tied to one or more students
-exports.createParent = async (req, res) => {
+exports.createParent = async (req, res, next) => {
   try {
     const { name, email, password, phone, studentIds } = req.body;
 
@@ -99,12 +99,12 @@ exports.createParent = async (req, res) => {
     if (err.code === 11000) {
       return res.status(409).json({ message: 'Email already in use in this institute' });
     }
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/parents/me/children — a logged-in PARENT fetches their own children's basic info
-exports.getMyChildren = async (req, res) => {
+exports.getMyChildren = async (req, res, next) => {
   try {
     const children = await Student.find({
       _id: { $in: req.user.children || [] },
@@ -113,12 +113,12 @@ exports.getMyChildren = async (req, res) => {
 
     res.json(children);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/parents/me/children/:studentId/summary — full dashboard data for ONE child
-exports.getChildSummary = async (req, res) => {
+exports.getChildSummary = async (req, res, next) => {
   try {
     const { studentId } = req.params;
 
@@ -170,12 +170,12 @@ exports.getChildSummary = async (req, res) => {
       notices,
     });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/parents/me/children/:studentId/fees
-exports.getChildFeeDetails = async (req, res) => {
+exports.getChildFeeDetails = async (req, res, next) => {
   try {
     const { studentId } = req.params;
 
@@ -213,6 +213,6 @@ exports.getChildFeeDetails = async (req, res) => {
 
     res.json(structuresWithBalance);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };

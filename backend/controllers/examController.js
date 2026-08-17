@@ -6,7 +6,7 @@ const Student = require('../models/Student');
 // ---------- EXAM ----------
 
 // POST /api/exams
-exports.createExam = async (req, res) => {
+exports.createExam = async (req, res, next) => {
   try {
     const exam = await Exam.create({
       ...req.body,
@@ -14,12 +14,12 @@ exports.createExam = async (req, res) => {
     });
     res.status(201).json(exam);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/exams  (optional ?batchId=... filter via query param)
-exports.getExams = async (req, res) => {
+exports.getExams = async (req, res, next) => {
   try {
     const filter = { instituteId: req.user.instituteId };
 
@@ -34,12 +34,12 @@ exports.getExams = async (req, res) => {
 
     res.json(exams);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/exams/:id
-exports.getExamById = async (req, res) => {
+exports.getExamById = async (req, res, next) => {
   try {
     const exam = await Exam.findOne({
       _id: req.params.id,
@@ -51,7 +51,7 @@ exports.getExamById = async (req, res) => {
     }
     res.json(exam);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
@@ -59,7 +59,7 @@ exports.getExamById = async (req, res) => {
 
 // POST /api/exams/:examId/marks
 // Body: { studentId, marks: [{ subjectName, marksObtained }, ...] }
-exports.enterMarks = async (req, res) => {
+exports.enterMarks = async (req, res, next) => {
   try {
     const { examId } = req.params;
     const { studentId, marks } = req.body;
@@ -90,12 +90,12 @@ exports.enterMarks = async (req, res) => {
     if (err.code === 11000) {
       return res.status(409).json({ message: 'Marks already entered for this student in this exam' });
     }
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/exams/results/student/:studentId
-exports.getResultsByStudent = async (req, res) => {
+exports.getResultsByStudent = async (req, res, next) => {
   try {
     const { studentId } = req.params;
 
@@ -117,14 +117,14 @@ exports.getResultsByStudent = async (req, res) => {
 
     res.json(results);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // ---------- RANKINGS (aggregation) ----------
 
 // GET /api/exams/:examId/rankings
-exports.getExamRankings = async (req, res) => {
+exports.getExamRankings = async (req, res, next) => {
   try {
     const examId = new mongoose.Types.ObjectId(req.params.examId);
     const instituteId = new mongoose.Types.ObjectId(req.user.instituteId);
@@ -164,6 +164,6 @@ exports.getExamRankings = async (req, res) => {
 
     res.json(withRank);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };

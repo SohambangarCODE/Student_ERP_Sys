@@ -7,6 +7,7 @@ import Button from '../components/Button';
 import { getNotices, createNotice, deleteNotice } from '../api/noticeApi';
 import { getBatches } from '../api/batchApi';
 import { useAuth } from '../context/AuthContext';
+import { getMyChildren } from '../api/parentApi';
 
 function Notices() {
   const { user } = useAuth();
@@ -27,6 +28,17 @@ function Notices() {
   const loadData = async () => {
     setLoading(true);
     try {
+      let noticeParams = {};
+
+      if (user?.role === 'parent') {
+      // Scope to the parent's own child's batch — same principle as isOwnChild elsewhere
+      const childrenRes = await getMyChildren();
+      const firstChild = childrenRes.data[0];
+      if (firstChild?.batchId) {
+        noticeParams = { batchId: firstChild.batchId._id || firstChild.batchId };
+      }
+    }
+
       const [noticeRes, batchRes] = await Promise.all([getNotices(), getBatches()]);
       setNotices(noticeRes.data);
       setBatches(batchRes.data);

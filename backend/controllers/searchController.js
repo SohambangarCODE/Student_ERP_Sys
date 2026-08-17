@@ -2,7 +2,7 @@ const Student = require('../models/Student');
 const Batch = require('../models/Batch');
 
 // GET /api/search?q=...
-exports.search = async (req, res) => {
+exports.search = async (req, res, next) => {
   try {
     const { q } = req.query;
 
@@ -29,6 +29,6 @@ exports.search = async (req, res) => {
 
     res.json({ students, batches });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };

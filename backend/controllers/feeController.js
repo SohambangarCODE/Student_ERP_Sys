@@ -12,7 +12,7 @@ const razorpay = new Razorpay({
 });
 
 // GET /api/fees/structure/for-student/:studentId — the ONE fee structure matching this student's batch, with live totals
-exports.getFeeStructureForStudent = async (req, res) => {
+exports.getFeeStructureForStudent = async (req, res, next) => {
   try {
     const student = await Student.findOne({ _id: req.params.studentId, instituteId: req.user.instituteId });
     if (!student) {
@@ -46,13 +46,13 @@ exports.getFeeStructureForStudent = async (req, res) => {
       balanceDue: structure.totalAmount - totalPaid,
     });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 
 // PUT /api/fees/structure/:id
-exports.updateFeeStructure = async (req, res) => {
+exports.updateFeeStructure = async (req, res, next) => {
   try {
     const { batchId, totalAmount, installments } = req.body;
 
@@ -68,13 +68,13 @@ exports.updateFeeStructure = async (req, res) => {
 
     res.json(structure);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // POST /api/fees/razorpay/order
 // Step 1 of the flow — create an order with Razorpay, return its ID to the frontend
-exports.createRazorpayOrder = async (req, res) => {
+exports.createRazorpayOrder = async (req, res, next) => {
   try {
     const { amount } = req.body; // amount in rupees, e.g. 7500
 
@@ -86,13 +86,13 @@ exports.createRazorpayOrder = async (req, res) => {
 
     res.json(order);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to create payment order', error: err.message });
+    next(err);
   }
 };
 
 // POST /api/fees/razorpay/verify
 // Step 2 — after checkout succeeds, verify the signature, THEN record the real FeePayment
-exports.verifyRazorpayPayment = async (req, res) => {
+exports.verifyRazorpayPayment = async (req, res, next) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, studentId, feeStructureId, amountPaid } = req.body;
 
@@ -134,14 +134,14 @@ exports.verifyRazorpayPayment = async (req, res) => {
 
     res.status(201).json(payment);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // ---------- FEE STRUCTURE ----------
 
 // POST /api/fees/structure
-exports.createFeeStructure = async (req, res) => {
+exports.createFeeStructure = async (req, res, next) => {
   try {
     const feeStructure = await FeeStructure.create({
       ...req.body,
@@ -149,25 +149,25 @@ exports.createFeeStructure = async (req, res) => {
     });
     res.status(201).json(feeStructure);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/fees/structure
-exports.getFeeStructures = async (req, res) => {
+exports.getFeeStructures = async (req, res, next) => {
   try {
     const structures = await FeeStructure.find({ instituteId: req.user.instituteId })
       .populate('batchId', 'name');
     res.json(structures);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // ---------- FEE PAYMENT ----------
 
 // POST /api/fees/payment
-exports.recordPayment = async (req, res) => {
+exports.recordPayment = async (req, res, next) => {
   try {
     const { studentId, feeStructureId, amountPaid, paymentMethod, transactionRef } = req.body;
 
@@ -191,12 +191,12 @@ exports.recordPayment = async (req, res) => {
 
     res.status(201).json(payment);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/fees/payment/student/:studentId
-exports.getPaymentsByStudent = async (req, res) => {
+exports.getPaymentsByStudent = async (req, res, next) => {
   try {
     const payments = await FeePayment.find({
       instituteId: req.user.instituteId,
@@ -204,14 +204,14 @@ exports.getPaymentsByStudent = async (req, res) => {
     }).sort({ paymentDate: -1 });
     res.json(payments);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // ---------- DEFAULTER LIST (aggregation pipeline) ----------
 
 // GET /api/fees/defaulters
-exports.getDefaulters = async (req, res) => {
+exports.getDefaulters = async (req, res, next) => {
   try {
     const instituteId = new mongoose.Types.ObjectId(req.user.instituteId);
 
@@ -289,6 +289,6 @@ exports.getDefaulters = async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };

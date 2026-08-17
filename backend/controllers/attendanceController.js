@@ -7,7 +7,7 @@ const Student = require('../models/Student');
 
 // POST /api/attendance/bulk
 // Body: { batchId, date, records: [{ studentId, status }, ...] }
-exports.markBulkAttendance = async (req, res) => {
+exports.markBulkAttendance = async (req, res, next) => {
   try {
     const { batchId, date, records } = req.body;
 
@@ -46,12 +46,12 @@ exports.markBulkAttendance = async (req, res) => {
         error: err.message,
       });
     }
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/attendance/batch/:batchId/date/:date
-exports.getAttendanceByBatchAndDate = async (req, res) => {
+exports.getAttendanceByBatchAndDate = async (req, res, next) => {
   try {
     const { batchId, date } = req.params;
     const attendance = await Attendance.find({
@@ -62,12 +62,12 @@ exports.getAttendanceByBatchAndDate = async (req, res) => {
 
     res.json(attendance);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/attendance/student/:studentId
-exports.getAttendanceByStudent = async (req, res) => {
+exports.getAttendanceByStudent = async (req, res, next) => {
   try {
     const { studentId } = req.params;
 
@@ -85,13 +85,13 @@ exports.getAttendanceByStudent = async (req, res) => {
 
     res.json(attendance);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/attendance/student/:studentId/summary
 // Returns attendance % — a simple aggregation, much lighter than the fee one
-exports.getStudentAttendanceSummary = async (req, res) => {
+exports.getStudentAttendanceSummary = async (req, res, next) => {
   try {
     const summary = await Attendance.aggregate([
       {
@@ -118,7 +118,7 @@ exports.getStudentAttendanceSummary = async (req, res) => {
 
     res.json({ ...counts, total, attendancePercentage: percentage });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 

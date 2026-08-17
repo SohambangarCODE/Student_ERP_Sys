@@ -7,7 +7,7 @@ const FeePayment = require('../models/FeePayment');
 const Attendance = require('../models/Attendance');
 const Notice = require('../models/Notice');
 
-exports.getDashboardStats = async (req, res) => {
+exports.getDashboardStats = async (req, res, next) => {
   try {
     const instituteId = new mongoose.Types.ObjectId(req.user.instituteId);
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
@@ -86,6 +86,6 @@ exports.getDashboardStats = async (req, res) => {
 
     res.json(responseData);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };

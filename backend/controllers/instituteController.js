@@ -1,7 +1,7 @@
 const Institute = require('../models/Institute');
 
 // GET /api/institutes/me
-exports.getMyInstitute = async (req, res) => {
+exports.getMyInstitute = async (req, res, next) => {
   try {
     const institute = await Institute.findById(req.user.instituteId);
     if (!institute) {
@@ -9,13 +9,13 @@ exports.getMyInstitute = async (req, res) => {
     }
     res.json(institute);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 
 // PUT /api/institutes/me — update basic institute details (name, address, contact)
-exports.updateMyInstitute = async (req, res) => {
+exports.updateMyInstitute = async (req, res, next) => {
   try {
     const { name, address, contactPhone, contactEmail } = req.body;
     const institute = await Institute.findByIdAndUpdate(
@@ -25,12 +25,12 @@ exports.updateMyInstitute = async (req, res) => {
     );
     res.json(institute);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // POST /api/institutes/me/logo — upload/replace the institute's logo
-exports.uploadLogo = async (req, res) => {
+exports.uploadLogo = async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
@@ -47,6 +47,6 @@ exports.uploadLogo = async (req, res) => {
 
     res.json(institute);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };

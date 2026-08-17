@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
+const { protect, restrictTo } = require('../middleware/authMiddleware');
+const validate = require('../middleware/validate');
+const { updateMeSchema, changePasswordSchema } = require('../validations/user.validation');
 const { getMe, updateMe, changePassword } = require('../controllers/userController');
 
-router.use(protect); // every logged-in role can reach these — no restrictTo needed, since it's always "your own" data
+router.use(protect); // every logged-in role can reach these
 
 router.get('/me', getMe);
-router.put('/me', updateMe);
-router.put('/me/password', changePassword);
+router.put('/me', validate(updateMeSchema), updateMe);
+router.put('/me/password', validate(changePasswordSchema), changePassword);
 
 module.exports = router;

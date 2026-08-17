@@ -1,7 +1,7 @@
 const Batch = require('../models/Batch');
 
 // POST /api/batches
-exports.createBatch = async (req, res) => {
+exports.createBatch = async (req, res, next) => {
   try {
     const batch = await Batch.create({
       ...req.body,
@@ -9,24 +9,24 @@ exports.createBatch = async (req, res) => {
     });
     res.status(201).json(batch);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/batches
-exports.getBatches = async (req, res) => {
+exports.getBatches = async (req, res, next) => {
   try {
     const batches = await Batch.find({ instituteId: req.user.instituteId })
       .populate('teacherId', 'name email')
       .sort({ createdAt: -1 });
     res.json(batches);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/batches/:id
-exports.getBatchById = async (req, res) => {
+exports.getBatchById = async (req, res, next) => {
   try {
     const batch = await Batch.findOne({
       _id: req.params.id,
@@ -38,12 +38,12 @@ exports.getBatchById = async (req, res) => {
     }
     res.json(batch);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // PUT /api/batches/:id
-exports.updateBatch = async (req, res) => {
+exports.updateBatch = async (req, res, next) => {
   try {
     const batch = await Batch.findOneAndUpdate(
       { _id: req.params.id, instituteId: req.user.instituteId },
@@ -56,12 +56,12 @@ exports.updateBatch = async (req, res) => {
     }
     res.json(batch);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // DELETE /api/batches/:id
-exports.deleteBatch = async (req, res) => {
+exports.deleteBatch = async (req, res, next) => {
   try {
     const batch = await Batch.findOneAndDelete({
       _id: req.params.id,
@@ -73,6 +73,6 @@ exports.deleteBatch = async (req, res) => {
     }
     res.json({ message: 'Batch deleted' });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };

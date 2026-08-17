@@ -4,7 +4,7 @@ const User = require('../models/User');
 const STAFF_ROLES = ['branch_admin', 'accountant', 'teacher', 'front_desk'];
 
 // POST /api/staff
-exports.createStaff = async (req, res) => {
+exports.createStaff = async (req, res, next) => {
   try {
     const { name, email, password, role, phone } = req.body;
 
@@ -36,12 +36,12 @@ exports.createStaff = async (req, res) => {
     if (err.code === 11000) {
       return res.status(409).json({ message: 'Email already in use in this institute' });
     }
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/staff
-exports.getStaff = async (req, res) => {
+exports.getStaff = async (req, res, next) => {
   try {
     const staff = await User.find({
       instituteId: req.user.instituteId,
@@ -52,12 +52,12 @@ exports.getStaff = async (req, res) => {
 
     res.json(staff);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/staff/:id
-exports.getStaffById = async (req, res) => {
+exports.getStaffById = async (req, res, next) => {
   try {
     const staff = await User.findOne({
       _id: req.params.id,
@@ -69,12 +69,12 @@ exports.getStaffById = async (req, res) => {
     }
     res.json(staff);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // PUT /api/staff/:id
-exports.updateStaff = async (req, res) => {
+exports.updateStaff = async (req, res, next) => {
   try {
     const { name, phone, role, isActive } = req.body;
 
@@ -93,13 +93,13 @@ exports.updateStaff = async (req, res) => {
     }
     res.json(staff);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // DELETE /api/staff/:id
 // We deactivate rather than hard-delete — preserves history (who marked attendance, entered marks, etc.)
-exports.deactivateStaff = async (req, res) => {
+exports.deactivateStaff = async (req, res, next) => {
   try {
     const staff = await User.findOneAndUpdate(
       { _id: req.params.id, instituteId: req.user.instituteId },
@@ -112,6 +112,6 @@ exports.deactivateStaff = async (req, res) => {
     }
     res.json({ message: 'Staff member deactivated', staff });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };

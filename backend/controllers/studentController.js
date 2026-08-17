@@ -7,7 +7,7 @@ const User = require("../models/User");
 const Message = require("../models/Message");
 
 // PUT /api/students/:id/remove-batch — unassign from batch, keep everything else intact
-exports.removeFromBatch = async (req, res) => {
+exports.removeFromBatch = async (req, res, next) => {
   try {
     const student = await Student.findOneAndUpdate(
       { _id: req.params.id, instituteId: req.user.instituteId },
@@ -19,13 +19,13 @@ exports.removeFromBatch = async (req, res) => {
     }
     res.json(student);
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    next(err);
   }
 };
 
 // PUT /api/students/:id/unlink-parent
 // Body: { parentId }
-exports.unlinkParent = async (req, res) => {
+exports.unlinkParent = async (req, res, next) => {
   try {
     const { parentId } = req.body;
     const { id: studentId } = req.params;
@@ -61,14 +61,14 @@ exports.unlinkParent = async (req, res) => {
     );
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    next(err);
   }
 };
 
 // PUT /api/students/:id/status — soft delete via status change (e.g. mark as 'dropped')
 // This is the SAFE, reversible-in-spirit option — all history stays intact, student just
 // stops showing up in active rosters, attendance-marking lists, fee defaulter lists, etc.
-exports.updateStudentStatus = async (req, res) => {
+exports.updateStudentStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
     const validStatuses = ["active", "inactive", "graduated", "dropped"];
@@ -86,12 +86,12 @@ exports.updateStudentStatus = async (req, res) => {
     }
     res.json(student);
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    next(err);
   }
 };
 
 // DELETE /api/students/:id/permanent — THE destructive option, cascades across every related collection
-exports.permanentlyDeleteStudent = async (req, res) => {
+exports.permanentlyDeleteStudent = async (req, res, next) => {
   try {
     const student = await Student.findOne({
       _id: req.params.id,
@@ -126,12 +126,12 @@ exports.permanentlyDeleteStudent = async (req, res) => {
       message: "Student and all related records permanently deleted",
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    next(err);
   }
 };
 
 // POST /api/students
-exports.createStudent = async (req, res) => {
+exports.createStudent = async (req, res, next) => {
   try {
     const student = await Student.create({
       ...req.body,
@@ -144,12 +144,12 @@ exports.createStudent = async (req, res) => {
         .status(409)
         .json({ message: "Admission number already exists in this institute" });
     }
-    res.status(500).json({ message: "Server error", error: err.message });
+    next(err);
   }
 };
 
 // GET /api/students
-exports.getStudents = async (req, res) => {
+exports.getStudents = async (req, res, next) => {
   try {
     const students = await Student.find({ instituteId: req.user.instituteId })
       .populate("batchId", "name")
@@ -157,12 +157,12 @@ exports.getStudents = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(students);
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    next(err);
   }
 };
 
 // GET /api/students/:id
-exports.getStudentById = async (req, res) => {
+exports.getStudentById = async (req, res, next) => {
   try {
     const student = await Student.findOne({
       _id: req.params.id,
@@ -176,12 +176,12 @@ exports.getStudentById = async (req, res) => {
     }
     res.json(student);
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    next(err);
   }
 };
 
 // PUT /api/students/:id
-exports.updateStudent = async (req, res) => {
+exports.updateStudent = async (req, res, next) => {
   try {
     // findOneAndUpdate with instituteId in the filter — same reasoning as above.
     // If someone from Institute B sends Institute A's student ID, this returns null, not someone else's data.
@@ -196,12 +196,12 @@ exports.updateStudent = async (req, res) => {
     }
     res.json(student);
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    next(err);
   }
 };
 
 // DELETE /api/students/:id
-exports.deleteStudent = async (req, res) => {
+exports.deleteStudent = async (req, res, next) => {
   try {
     const student = await Student.findOneAndDelete({
       _id: req.params.id,
@@ -213,6 +213,6 @@ exports.deleteStudent = async (req, res) => {
     }
     res.json({ message: "Student deleted" });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    next(err);
   }
 };

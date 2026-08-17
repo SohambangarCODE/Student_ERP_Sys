@@ -13,7 +13,7 @@ const ROLE_INFO = {
 
 
 // GET /api/messages/contacts/:studentId — PARENT ONLY: every staff member this parent could message about this child
-exports.getAvailableContacts = async (req, res) => {
+exports.getAvailableContacts = async (req, res, next) => {
   try {
     const { studentId } = req.params;
 
@@ -58,13 +58,13 @@ exports.getAvailableContacts = async (req, res) => {
 
     res.json(contacts);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // POST /api/messages
 // Body: { studentId, staffId (required if sender is parent), content }
-exports.sendMessage = async (req, res) => {
+exports.sendMessage = async (req, res, next) => {
   try {
     const { studentId, content } = req.body;
     let { staffId } = req.body;
@@ -105,13 +105,13 @@ exports.sendMessage = async (req, res) => {
 
     res.status(201).json(message);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/messages/thread/:studentId?staffId=...   (parent side)
 // GET /api/messages/thread/:studentId?parentId=...  (staff side — staffId is implicitly themself)
-exports.getThread = async (req, res) => {
+exports.getThread = async (req, res, next) => {
   try {
     const { studentId } = req.params;
     let parentId, staffId;
@@ -155,12 +155,12 @@ exports.getThread = async (req, res) => {
 
     res.json(messages);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
 
 // GET /api/messages/threads — STAFF ONLY: list of conversations WHERE THIS STAFF MEMBER IS A PARTICIPANT
-exports.getAllThreads = async (req, res) => {
+exports.getAllThreads = async (req, res, next) => {
   try {
     const mongoose = require('mongoose');
     const staffId = new mongoose.Types.ObjectId(req.user.id); // the critical fix — scope to self
@@ -204,6 +204,6 @@ exports.getAllThreads = async (req, res) => {
 
     res.json(threads);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    next(err);
   }
 };
