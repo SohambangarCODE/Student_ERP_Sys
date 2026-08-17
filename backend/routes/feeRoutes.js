@@ -10,6 +10,7 @@ const {
 } = require('../controllers/feeController');
 const { createRazorpayOrder, verifyRazorpayPayment } = require('../controllers/feeController');
 const { updateFeeStructure } = require('../controllers/feeController');
+const { getFeeStructureForStudent } = require('../controllers/feeController'); 
 
 router.use(protect);
 
@@ -25,5 +26,7 @@ router.put('/structure/:id', restrictTo('super_admin', 'branch_admin', 'accounta
 
 router.post('/razorpay/order', createRazorpayOrder);
 router.post('/razorpay/verify', verifyRazorpayPayment);
+
+router.get('/structure/for-student/:studentId', getFeeStructureForStudent);
 
 module.exports = router;

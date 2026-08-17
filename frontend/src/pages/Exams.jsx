@@ -8,6 +8,7 @@ import Tabs from '../components/Tabs';
 import { getExams, createExam, enterMarks, getExamRankings } from '../api/examApi';
 import { getBatches } from '../api/batchApi';
 import { getStudents } from '../api/studentApi';
+import { X } from 'lucide-react'; 
 
 function Exams() {
   const [activeTab, setActiveTab] = useState('exams');
@@ -84,6 +85,13 @@ function ExamsTab() {
     setFormData({ ...formData, subjects: [...formData.subjects, { name: '', maxMarks: '' }] });
   };
 
+  const removeSubject = (index) => {
+  setFormData({
+    ...formData,
+    subjects: formData.subjects.filter((_, i) => i !== index),
+  });
+};
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -155,26 +163,36 @@ function ExamsTab() {
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">Subjects</label>
             <div className="space-y-2">
-              {formData.subjects.map((subj, i) => (
-                <div key={i} className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input
-                    value={subj.name}
-                    onChange={(e) => updateSubject(i, 'name', e.target.value)}
-                    placeholder="Subject name"
-                    className="rounded-lg border border-slate-300 px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-                    required
-                  />
-                  <input
-                    type="number"
-                    value={subj.maxMarks}
-                    onChange={(e) => updateSubject(i, 'maxMarks', e.target.value)}
-                    placeholder="Max marks"
-                    className="rounded-lg border border-slate-300 px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-                    required
-                  />
-                </div>
-              ))}
-            </div>
+  {formData.subjects.map((subj, i) => (
+    <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+      <input
+        value={subj.name}
+        onChange={(e) => updateSubject(i, "name", e.target.value)}
+        placeholder="Subject name"
+        className="rounded-lg border border-slate-300 px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+        required
+      />
+      <input
+        type="number"
+        value={subj.maxMarks}
+        onChange={(e) => updateSubject(i, "maxMarks", e.target.value)}
+        placeholder="Max marks"
+        className="rounded-lg border border-slate-300 px-2.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+        required
+      />
+      {formData.subjects.length > 1 && (
+        <button
+          type="button"
+          onClick={() => removeSubject(i)}
+          className="text-slate-400 hover:text-red-600 px-1"
+          aria-label="Remove subject"
+        >
+          <X size={16} />
+        </button>
+      )}
+    </div>
+  ))}
+</div>
             <button type="button" onClick={addSubject} className="mt-2 text-sm font-medium text-brand-600 hover:text-brand-700">
               + Add subject
             </button>

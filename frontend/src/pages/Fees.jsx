@@ -18,6 +18,7 @@ import { useAuth } from "../context/AuthContext";
 import { updateFeeStructure } from "../api/feeApi";
 import { generateFeeReceipt } from "../utils/generateFeeReceipt";
 import { getMyInstitute } from "../api/instituteApi";
+import { getFeeStructureForStudent } from '../api/feeApi'; 
 
 function Fees() {
   const [activeTab, setActiveTab] = useState("structures");
@@ -309,9 +310,31 @@ function RecordPaymentTab() {
     paymentMethod: "cash",
   });
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState(null); // { type: 'success' | 'error', text }
+  const [message, setMessage] = useState(null); 
+  const [autoFilledStructure, setAutoFilledStructure] = useState(null);
+const [lookingUp, setLookingUp] = useState(false);
+
+
 
   const { user } = useAuth();
+
+  useEffect(() => {
+  if (!formData.studentId) {
+    setAutoFilledStructure(null);
+    return;
+  }
+
+  setLookingUp(true);
+  getFeeStructureForStudent(formData.studentId)
+    .then((res) => {
+      setAutoFilledStructure(res.data);
+      // Auto-select the matching fee structure in the dropdown, if one was found
+      if (res.data) {
+        setFormData((prev) => ({ ...prev, feeStructureId: res.data._id }));
+      }
+    })
+    .finally(() => setLookingUp(false));
+}, [formData.studentId]);
 
   const handleRazorpayPayment = async () => {
     setSaving(true);
@@ -455,6 +478,32 @@ function RecordPaymentTab() {
           <label className="block text-sm font-medium text-slate-700 mb-1.5">
             Fee Structure
           </label>
+          {lookingUp && (
+  <p className="text-xs text-slate-400">Looking up fee details...</p>
+)}
+
+{!lookingUp && formData.studentId && autoFilledStructure === null && (
+  <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-700">
+    No fee structure found for this student's batch. You can still select one manually below, or set one up first in the Fee Structures tab.
+  </div>
+)}
+
+{autoFilledStructure && (
+  <div className="rounded-lg bg-brand-50 border border-brand-200 px-3 py-3 text-sm">
+    <div className="flex justify-between text-slate-700">
+      <span>Total Fee</span>
+      <span className="font-medium">₹{autoFilledStructure.totalAmount.toLocaleString()}</span>
+    </div>
+    <div className="flex justify-between text-slate-700 mt-1">
+      <span>Already Paid</span>
+      <span className="font-medium">₹{autoFilledStructure.totalPaid.toLocaleString()}</span>
+    </div>
+    <div className="flex justify-between text-brand-700 font-semibold mt-1 pt-1 border-t border-brand-200">
+      <span>Balance Due</span>
+      <span>₹{autoFilledStructure.balanceDue.toLocaleString()}</span>
+    </div>
+  </div>
+)}
           <select
             value={formData.feeStructureId}
             onChange={(e) =>

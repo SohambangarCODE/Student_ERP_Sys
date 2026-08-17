@@ -11,6 +11,45 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+// GET /api/fees/structure/for-student/:studentId — the ONE fee structure matching this student's batch, with live totals
+exports.getFeeStructureForStudent = async (req, res) => {
+  try {
+    const student = await Student.findOne({ _id: req.params.studentId, instituteId: req.user.instituteId });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    if (!student.batchId) {
+      return res.json(null); // no batch assigned, so no fee structure could apply — not an error, just nothing to show
+    }
+
+    const structure = await FeeStructure.findOne({
+      instituteId: req.user.instituteId,
+      batchId: student.batchId,
+    });
+
+    if (!structure) {
+      return res.json(null);
+    }
+
+    const payments = await FeePayment.find({
+      instituteId: req.user.instituteId,
+      studentId: student._id,
+      feeStructureId: structure._id,
+    });
+    const totalPaid = payments.reduce((sum, p) => sum + p.amountPaid, 0);
+
+    res.json({
+      _id: structure._id,
+      totalAmount: structure.totalAmount,
+      totalPaid,
+      balanceDue: structure.totalAmount - totalPaid,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 
 // PUT /api/fees/structure/:id
 exports.updateFeeStructure = async (req, res) => {

@@ -10,6 +10,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
 app.use('/uploads', express.static('uploads')); // keep this here — no route dependency, just static file serving
 
 const authRoutes = require("./routes/authRoutes");
@@ -59,9 +60,9 @@ mongoose
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", message: "ERP backend is alive" });
-});
+// app.get("/api/health", (req, res) => {
+//   res.json({ status: "ok", message: "ERP backend is alive" });
+// });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

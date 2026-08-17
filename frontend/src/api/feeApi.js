@@ -1,5 +1,8 @@
 import axiosInstance from './axiosInstance';
 
+
+export const getFeeStructureForStudent = (studentId) => axiosInstance.get(`/fees/structure/for-student/${studentId}`);
+
 export const getFeeStructures = () => axiosInstance.get('/fees/structure');
 export const createFeeStructure = (data) => axiosInstance.post('/fees/structure', data);
 

@@ -38,17 +38,22 @@ exports.unlinkParent = async (req, res) => {
       return res.status(404).json({ message: "Student not found" });
     }
 
-    // Remove the link from BOTH sides of the relationship — this is exactly the mistake
-    // we just found and had to fix by hand in Atlas: only fixing Student.parentIds and
-    // forgetting User.children leaves the parent still able to see a child that isn't theirs.
-    await Student.updateOne(
-      { _id: studentId },
-      { $pull: { parentIds: parentId } },
+    // Filter out the parent ID robustly (handles if DB incorrectly stored it as string)
+    student.parentIds = student.parentIds.filter(
+      (id) => id.toString() !== parentId.toString()
     );
-    await User.updateOne(
-      { _id: parentId, instituteId: req.user.instituteId },
-      { $pull: { children: studentId } },
-    );
+    await student.save();
+
+    const parent = await User.findOne({
+      _id: parentId,
+      instituteId: req.user.instituteId,
+    });
+    if (parent) {
+      parent.children = parent.children.filter(
+        (id) => id.toString() !== studentId.toString()
+      );
+      await parent.save();
+    }
 
     const updated = await Student.findById(studentId).populate(
       "parentIds",

@@ -14,7 +14,11 @@ import {
   unlinkParent,
 } from "../api/studentApi";
 import { getBatches } from "../api/batchApi";
-import { createParent } from "../api/parentApi";
+import {
+  createParent,
+  searchParentByEmail,
+  linkExistingParent,
+} from "../api/parentApi";
 import { useLocation } from "react-router-dom";
 import { MoreVertical, UserMinus, UserX, Trash2, Check } from "lucide-react";
 import { createPortal } from "react-dom";
@@ -55,6 +59,12 @@ function Students() {
   const [deleting, setDeleting] = useState(false);
   const [actionMessage, setActionMessage] = useState(null);
 
+  const [linkMode, setLinkMode] = useState("new");
+  const [searchEmail, setSearchEmail] = useState("");
+  const [foundParent, setFoundParent] = useState(null);
+  const [searchError, setSearchError] = useState("");
+  const [searching, setSearching] = useState(false);
+
   const showMessage = (type, text) => {
     setActionMessage({ type, text });
     setTimeout(() => setActionMessage(null), 4000);
@@ -77,34 +87,35 @@ function Students() {
   };
 
   const handleUnlinkParent = async (student, parent) => {
-  if (
-    !window.confirm(
-      `Unlink ${parent.name} from ${student.name}? They will lose access to this student's data.`,
-    )
-  )
-    return;
-  try {
-    await unlinkParent(student._id, parent._id);
-    showMessage(
-      "success",
-      `${parent.name} has been unlinked from ${student.name}.`,
-    );
-    // Update local state immediately, instead of waiting for a full refetch —
-    // removes any lag between "unlink succeeded" and "the UI actually shows it."
-    setStudents((prev) =>
-      prev.map((s) =>
-        s._id === student._id
-          ? { ...s, parentIds: s.parentIds.filter((p) => p._id !== parent._id) }
-          : s
+    if (
+      !window.confirm(
+        `Unlink ${parent.name} from ${student.name}? They will lose access to this student's data.`,
       )
-    );
-  } catch (err) {
-    showMessage(
-      "error",
-      err.response?.data?.message || "Failed to unlink parent",
-    );
-  }
-};
+    )
+      return;
+    try {
+      await unlinkParent(student._id, parent._id);
+      showMessage(
+        "success",
+        `${parent.name} has been unlinked from ${student.name}.`,
+      );
+      setStudents((prev) =>
+        prev.map((s) =>
+          s._id === student._id
+            ? {
+                ...s,
+                parentIds: s.parentIds.filter((p) => p._id !== parent._id),
+              }
+            : s,
+        ),
+      );
+    } catch (err) {
+      showMessage(
+        "error",
+        err.response?.data?.message || "Failed to unlink parent",
+      );
+    }
+  };
 
   const handleMarkDropped = async (student) => {
     if (
@@ -161,7 +172,44 @@ function Students() {
     setParentTargetStudent(student);
     setParentFormData({ name: "", email: "", password: "", phone: "" });
     setParentError("");
+    setLinkMode("new");
+    setSearchEmail("");
+    setFoundParent(null);
+    setSearchError("");
     setIsParentModalOpen(true);
+  };
+
+  const handleSearchParent = async () => {
+    setSearching(true);
+    setSearchError("");
+    setFoundParent(null);
+    try {
+      const res = await searchParentByEmail(searchEmail);
+      setFoundParent(res.data);
+    } catch (err) {
+      setSearchError(
+        err.response?.data?.message || "No parent found with that email",
+      );
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleLinkExisting = async () => {
+    setParentSaving(true);
+    try {
+      await linkExistingParent(foundParent._id, parentTargetStudent._id);
+      setIsParentModalOpen(false);
+      showMessage(
+        "success",
+        `${foundParent.name} linked to ${parentTargetStudent.name}.`,
+      );
+      fetchStudents();
+    } catch (err) {
+      setSearchError(err.response?.data?.message || "Failed to link parent");
+    } finally {
+      setParentSaving(false);
+    }
   };
 
   const handleParentSubmit = async (e) => {
@@ -476,6 +524,10 @@ function Students() {
         )}
       </Modal>
 
+      {/* ---- Parent modal: clean structure, one instance of each piece ----
+          1. "Already linked" read-only list (only if parents exist)
+          2. Mode toggle: Create new / Link existing
+          3. EITHER the existing-parent search UI OR the create-new form, never both */}
       <Modal
         isOpen={isParentModalOpen}
         onClose={() => setIsParentModalOpen(false)}
@@ -496,62 +548,143 @@ function Students() {
           </div>
         )}
 
-        <form onSubmit={handleParentSubmit} className="space-y-4">
-          <Input
-            label="Parent's Full Name"
-            value={parentFormData.name}
-            onChange={(e) =>
-              setParentFormData({ ...parentFormData, name: e.target.value })
-            }
-            required
-          />
-          <Input
-            label="Email"
-            type="email"
-            value={parentFormData.email}
-            onChange={(e) =>
-              setParentFormData({ ...parentFormData, email: e.target.value })
-            }
-            required
-          />
-          <Input
-            label="Temporary Password"
-            type="password"
-            value={parentFormData.password}
-            onChange={(e) =>
-              setParentFormData({ ...parentFormData, password: e.target.value })
-            }
-            required
-          />
-          <Input
-            label="Phone"
-            value={parentFormData.phone}
-            onChange={(e) =>
-              setParentFormData({ ...parentFormData, phone: e.target.value })
-            }
-          />
+        <div className="flex gap-2 mb-4">
+          <button
+            type="button"
+            onClick={() => setLinkMode("new")}
+            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium border ${
+              linkMode === "new"
+                ? "border-brand-500 bg-brand-50 text-brand-700"
+                : "border-slate-200 text-slate-500"
+            }`}
+          >
+            Create new parent
+          </button>
+          <button
+            type="button"
+            onClick={() => setLinkMode("existing")}
+            className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium border ${
+              linkMode === "existing"
+                ? "border-brand-500 bg-brand-50 text-brand-700"
+                : "border-slate-200 text-slate-500"
+            }`}
+          >
+            Link existing parent
+          </button>
+        </div>
 
-          {parentError && (
-            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
-              {parentError}
+        {linkMode === "existing" ? (
+          <div className="space-y-4">
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <Input
+                  label="Parent's Email"
+                  type="email"
+                  value={searchEmail}
+                  onChange={(e) => setSearchEmail(e.target.value)}
+                  placeholder="Search by email"
+                />
+              </div>
+              <Button type="button" onClick={handleSearchParent} loading={searching}>
+                Search
+              </Button>
             </div>
-          )}
 
-          <div className="flex gap-2 pt-2">
-            <Button type="submit" loading={parentSaving} className="flex-1">
-              {parentTargetStudent?.parentIds?.length > 0
-                ? "Add Another Parent Login"
-                : "Create Parent Login"}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setIsParentModalOpen(false)}
-            >
-              Cancel
-            </Button>
+            {searchError && (
+              <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                {searchError}
+              </div>
+            )}
+
+            {foundParent && (
+              <div className="rounded-lg bg-green-50 border border-green-200 px-3 py-3 text-sm text-green-800">
+                <p className="font-medium">{foundParent.name}</p>
+                <p className="text-xs text-green-600">
+                  {foundParent.email} · {foundParent.phone}
+                </p>
+                <p className="text-xs text-green-600 mt-1">
+                  Currently linked to {foundParent.children?.length || 0} student(s)
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                type="button"
+                onClick={handleLinkExisting}
+                disabled={!foundParent}
+                loading={parentSaving}
+                className="flex-1"
+              >
+                Link to {parentTargetStudent?.name}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setIsParentModalOpen(false)}
+              >
+                Cancel
+              </Button>
+            </div>
           </div>
-        </form>
+        ) : (
+          <form onSubmit={handleParentSubmit} className="space-y-4">
+            <Input
+              label="Parent's Full Name"
+              value={parentFormData.name}
+              onChange={(e) =>
+                setParentFormData({ ...parentFormData, name: e.target.value })
+              }
+              required
+            />
+            <Input
+              label="Email"
+              type="email"
+              value={parentFormData.email}
+              onChange={(e) =>
+                setParentFormData({ ...parentFormData, email: e.target.value })
+              }
+              required
+            />
+            <Input
+              label="Temporary Password"
+              type="password"
+              value={parentFormData.password}
+              onChange={(e) =>
+                setParentFormData({ ...parentFormData, password: e.target.value })
+              }
+              required
+            />
+            <Input
+              label="Phone"
+              value={parentFormData.phone}
+              onChange={(e) =>
+                setParentFormData({ ...parentFormData, phone: e.target.value })
+              }
+            />
+
+            {parentError && (
+              <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+                {parentError}
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-2">
+              <Button type="submit" loading={parentSaving} className="flex-1">
+                {parentTargetStudent?.parentIds?.length > 0
+                  ? "Add Another Parent Login"
+                  : "Create Parent Login"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setIsParentModalOpen(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        )}
       </Modal>
     </DashboardLayout>
   );

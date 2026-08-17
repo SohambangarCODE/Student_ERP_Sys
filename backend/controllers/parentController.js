@@ -6,6 +6,59 @@ const FeePayment = require('../models/FeePayment');
 const Attendance = require('../models/Attendance');
 const Notice = require('../models/Notice');
 
+
+// GET /api/parents/search?email=... — find an existing parent account by email, within this institute
+exports.searchParentByEmail = async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ message: 'email query param is required' });
+    }
+
+    const parent = await User.findOne({
+      instituteId: req.user.instituteId,
+      email,
+      role: 'parent',
+    }).select('name email phone children');
+
+    if (!parent) {
+      return res.status(404).json({ message: 'No parent account found with that email in this institute' });
+    }
+
+    res.json(parent);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// PUT /api/parents/link
+// Body: { parentId, studentId } — links an EXISTING parent account to another student, both sides atomically
+exports.linkExistingParent = async (req, res) => {
+  try {
+    const { parentId, studentId } = req.body;
+
+    const student = await Student.findOne({ _id: studentId, instituteId: req.user.instituteId });
+    if (!student) {
+      return res.status(404).json({ message: 'Student not found in this institute' });
+    }
+
+    const parent = await User.findOne({ _id: parentId, instituteId: req.user.instituteId, role: 'parent' });
+    if (!parent) {
+      return res.status(404).json({ message: 'Parent account not found in this institute' });
+    }
+
+    // $addToSet on BOTH sides, in the same request — this is the one place this relationship
+    // gets created from now on, so there's no path left where only one side gets updated.
+    await Student.updateOne({ _id: studentId }, { $addToSet: { parentIds: parentId } });
+    await User.updateOne({ _id: parentId }, { $addToSet: { children: studentId } });
+
+    const updatedStudent = await Student.findById(studentId).populate('parentIds', 'name email phone');
+    res.json(updatedStudent);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 // POST /api/parents  — admin/staff creates a parent account tied to one or more students
 exports.createParent = async (req, res) => {
   try {
