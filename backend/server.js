@@ -17,8 +17,8 @@ app.use(cors(
     : {}
 ));
 
-// Serve static files from the "public" directory
-app.use(express.static(path.join(__dirname, "../public")));
+// Serve static files from the "public" directory (frontend build lives inside backend/public)
+app.use(express.static(path.join(__dirname, "public")));
 
 // API middleware
 app.use(express.json());
@@ -88,6 +88,13 @@ app.get("/health", (req, res) => {
     message: "Server is healthy",
     timestamp: new Date().toISOString(),
    });    
+});
+
+// ── SPA catch-all ─────────────────────────────────────────────────────────────
+// Must come AFTER all /api/* routes so API routes are never swallowed.
+// Sends index.html for any non-API GET request so React Router can handle it.
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // ── Global error handler ───────────────────────────────────────────────────────
