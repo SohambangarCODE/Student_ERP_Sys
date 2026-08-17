@@ -50,7 +50,7 @@ function Login() {
         <div className="md:w-[38%] bg-brand-600 p-8 sm:p-10 flex flex-col justify-between text-white">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-white text-brand-600 font-bold text-sm flex items-center justify-center">E</div>
-            <span className="font-semibold">ERP Suite</span>
+            <span className="font-semibold">SCHOLARLYNK</span>
           </div>
 
           <div className="mt-10 md:mt-0">

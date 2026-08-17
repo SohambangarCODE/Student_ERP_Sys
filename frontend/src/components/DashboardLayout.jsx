@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import logo from "../assets/logo.png";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -15,7 +16,6 @@ import {
   ChevronDown,
   Menu,
   X,
-  Upload,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { MessageCircle } from "lucide-react";
@@ -168,10 +168,12 @@ function DashboardLayout({ children }) {
       >
         <div className="h-16 flex items-center justify-between gap-2 px-5 border-b border-slate-200">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-brand-600 text-white font-bold text-sm flex items-center justify-center">
-              E
-            </div>
-            <span className="font-semibold text-slate-900">ERP Suite</span>
+            <img
+              src={logo}
+              alt="SCHOLARLYNK Logo"
+              className="h-8 w-8 rounded-lg object-contain"
+            />
+            <span className="font-semibold text-slate-900">SCHOLARLYNK</span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -294,10 +296,6 @@ function DashboardLayout({ children }) {
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-            <button className="relative text-slate-500 hover:text-slate-700">
-              <Bell size={19} />
-            </button>
-
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}

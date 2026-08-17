@@ -17,6 +17,10 @@ app.use(cors(
     : {}
 ));
 
+// Serve static files from the "public" directory
+app.use(express.static(path.join(__dirname, "../public")));
+
+// API middleware
 app.use(express.json());
 
 // ── Rate limiting ──────────────────────────────────────────────────────────────
@@ -77,6 +81,14 @@ app.use('/api/search', searchRoutes);
 
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes);
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ 
+    success: true,
+    message: "Server is healthy",
+    timestamp: new Date().toISOString(),
+   });    
+});
 
 // ── Global error handler ───────────────────────────────────────────────────────
 // Must be registered LAST — after all routes.
