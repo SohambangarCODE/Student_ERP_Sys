@@ -33,6 +33,7 @@ const createStudentSchema = Joi.object({
 // PUT /api/students/:id
 const updateStudentSchema = Joi.object({
   name: Joi.string().trim().min(2).max(80).optional(),
+  admissionNumber: Joi.string().trim().min(1).max(30).optional(),
   email: Joi.string().email({ tlds: { allow: false } }).max(254).lowercase().trim().optional().allow(''),
   phone: Joi.string().pattern(PHONE_PATTERN).optional().allow(''),
   gender: Joi.string().valid('male', 'female', 'other').optional().allow(null, ''),

@@ -61,7 +61,7 @@ const createFeeStructureSchema = Joi.object({
 });
 
 const updateFeeStructureSchema = Joi.object({
-  batchId: OBJECT_ID.optional(),
+  batchId: OBJECT_ID.optional().allow(null, ''),
   totalAmount: Joi.number().positive().max(10_000_000).optional(),
   installments: Joi.array()
     .items(
