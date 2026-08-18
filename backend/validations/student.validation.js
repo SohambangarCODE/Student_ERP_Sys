@@ -17,6 +17,7 @@ const createStudentSchema = Joi.object({
   phone: Joi.string().pattern(PHONE_PATTERN).optional().allow('').messages({
     'string.pattern.base': 'Phone must be a valid 10-digit Indian mobile number.',
   }),
+  gender: Joi.string().valid('male', 'female', 'other').optional().allow(null, ''),
   batchId: Joi.string().hex().length(24).optional().allow(null, ''),  // Mongoose ObjectId
   status: Joi.string().valid(...VALID_STATUSES).default('active'),
   dateOfBirth: Joi.string().isoDate().optional().allow(null, ''),
@@ -34,6 +35,7 @@ const updateStudentSchema = Joi.object({
   name: Joi.string().trim().min(2).max(80).optional(),
   email: Joi.string().email({ tlds: { allow: false } }).max(254).lowercase().trim().optional().allow(''),
   phone: Joi.string().pattern(PHONE_PATTERN).optional().allow(''),
+  gender: Joi.string().valid('male', 'female', 'other').optional().allow(null, ''),
   batchId: Joi.string().hex().length(24).optional().allow(null, ''),
   status: Joi.string().valid(...VALID_STATUSES).optional(),
   dateOfBirth: Joi.string().isoDate().optional().allow(null, ''),

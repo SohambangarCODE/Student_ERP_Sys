@@ -1,14 +1,12 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  // Relative URL works in both local dev (served by Express on :5000) and
-  // production (served on the same Render domain). No env variable needed.
-  baseURL: '/api',
+  // In local dev, hit the backend directly on its own port.
+  // In production (Render), frontend and backend share one domain, so a relative
+  // path correctly resolves to the same server — no separate env variable needed there.
+  baseURL: import.meta.env.DEV ? 'http://localhost:5000/api' : '/api',
 });
 
-// This runs before EVERY request made through this instance.
-// It reads the token from localStorage and attaches it automatically —
-// so no component or api file ever has to remember to add the header manually.
 axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -17,8 +15,6 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
-// This runs on every RESPONSE. If the backend ever returns 401 (token invalid/expired),
-// we clear storage and redirect to login — instead of every page having to handle this individually.
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {

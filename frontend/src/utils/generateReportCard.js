@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { assetUrl } from './assetUrl';
 
 const BRAND = [79, 70, 229]; // indigo-600, matches your app's brand color
 const BRAND_LIGHT = [238, 242, 255]; // indigo-50
@@ -22,7 +23,7 @@ export async function generateReportCard({ institute, student, examResult }) {
   let logoImg = null;
   if (institute?.logoUrl) {
     try {
-      logoImg = await loadImage(institute.logoUrl);
+      logoImg = await loadImage(assetUrl(institute.logoUrl));
     } catch {
       logoImg = null; // if it fails to load, just skip it rather than breaking the whole PDF
     }

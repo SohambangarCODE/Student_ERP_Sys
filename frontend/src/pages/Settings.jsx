@@ -6,6 +6,7 @@ import Button from '../components/Button';
 import { getMe, updateMe, changePassword } from '../api/userApi';
 import { getMyInstitute, updateMyInstitute, uploadLogo } from '../api/instituteApi';
 import { useAuth } from '../context/AuthContext';
+import { assetUrl } from '../utils/assetUrl';
 
 const ROLE_LABELS = {
   super_admin: 'Super Admin',
@@ -333,7 +334,7 @@ function InstituteSection() {
           <div className="h-20 w-20 rounded-xl border-2 border-dashed border-slate-300 bg-white flex items-center justify-center overflow-hidden shrink-0">
             {institute.logoUrl ? (
               <img 
-                src={institute.logoUrl} 
+                src={assetUrl(institute.logoUrl)}
                 alt="Institute logo" 
                 className="h-full w-full object-contain p-2" 
               />

@@ -1,5 +1,6 @@
 function Table({ columns, data, onRowClick, emptyMessage = 'No records found' }) {
-  if (data.length === 0) {
+  const rows = Array.isArray(data) ? data : [];
+  if (rows.length === 0) {
     return (
       <div className="text-center py-12 text-sm text-slate-500 bg-white rounded-xl border border-slate-200">
         {emptyMessage}
@@ -9,8 +10,6 @@ function Table({ columns, data, onRowClick, emptyMessage = 'No records found' })
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      {/* overflow-x-auto lets the table scroll horizontally on narrow screens
-          instead of every column getting crushed to fit */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm min-w-[600px]">
           <thead>
@@ -23,7 +22,7 @@ function Table({ columns, data, onRowClick, emptyMessage = 'No records found' })
             </tr>
           </thead>
           <tbody>
-            {data.map((row, i) => (
+            {rows.map((row, i) => (
               <tr
                 key={row._id || i}
                 onClick={() => onRowClick?.(row)}

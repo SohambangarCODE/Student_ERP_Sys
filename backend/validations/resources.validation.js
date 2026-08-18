@@ -23,11 +23,18 @@ const createNoticeSchema = Joi.object({
 });
 
 // ── Batch ──────────────────────────────────────────────────────────────────────
+const scheduleSlotSchema = Joi.object({
+  day: Joi.string().trim().max(10).optional().allow(''),
+  startTime: Joi.string().trim().max(10).optional().allow(''),
+  endTime: Joi.string().trim().max(10).optional().allow(''),
+});
+
 const createBatchSchema = Joi.object({
   name: Joi.string().trim().min(1).max(100).required(),
   subject: Joi.string().trim().max(100).optional().allow(''),
   description: Joi.string().trim().max(500).optional().allow(''),
   teacherId: OBJECT_ID.optional().allow(null, ''),
+  schedule: Joi.array().items(scheduleSlotSchema).optional(),
 });
 
 const updateBatchSchema = Joi.object({
@@ -35,6 +42,7 @@ const updateBatchSchema = Joi.object({
   subject: Joi.string().trim().max(100).optional().allow(''),
   description: Joi.string().trim().max(500).optional().allow(''),
   teacherId: OBJECT_ID.optional().allow(null, ''),
+  schedule: Joi.array().items(scheduleSlotSchema).optional(),
 }).min(1);
 
 // ── Fee ────────────────────────────────────────────────────────────────────────

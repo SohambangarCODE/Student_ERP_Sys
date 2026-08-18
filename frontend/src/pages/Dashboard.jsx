@@ -82,9 +82,9 @@ function Dashboard() {
     );
   }
 
-  const attendancePieData = Object.entries(stats.todayAttendance)
-    .filter(([, count]) => count > 0)
-    .map(([status, count]) => ({ name: status, value: count }));
+  const attendancePieData = Object.entries(stats.todayAttendance || {})
+  .filter(([, count]) => count > 0)
+  .map(([status, count]) => ({ name: status, value: count }));
 
   return (
     <DashboardLayout>
@@ -215,11 +215,11 @@ function Dashboard() {
             Recent Notices
           </h3>
         </div>
-        {stats.recentNotices.length === 0 ? (
+        {(stats.recentNotices || []).length === 0 ? (
           <p className="text-sm text-slate-400 py-4">No notices posted yet.</p>
         ) : (
           <div className="space-y-3">
-            {stats.recentNotices.map((notice) => (
+            {(stats.recentNotices || []).map((notice) => (
               <div
                 key={notice._id}
                 className="flex items-start justify-between border-b border-slate-100 last:border-0 pb-3 last:pb-0"

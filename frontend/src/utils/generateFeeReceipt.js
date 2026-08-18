@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { assetUrl } from './assetUrl';
 
 const BRAND = [79, 70, 229];
 const BRAND_LIGHT = [238, 242, 255];
@@ -23,7 +24,7 @@ export async function generateFeeReceipt({ institute, student, payment, feeStruc
   let logoImg = null;
   if (institute?.logoUrl) {
     try {
-      logoImg = await loadImage(institute.logoUrl);
+      logoImg = await loadImage(assetUrl(institute.logoUrl));
     } catch {
       logoImg = null;
     }

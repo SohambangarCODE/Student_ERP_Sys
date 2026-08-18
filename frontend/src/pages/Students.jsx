@@ -24,6 +24,8 @@ import { MoreVertical, UserMinus, UserX, Trash2, Check } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useAuth } from "../context/AuthContext";
 
+
+
 function Students() {
   const [students, setStudents] = useState([]);
   const [batches, setBatches] = useState([]);
@@ -153,9 +155,11 @@ function Students() {
   };
 
   useEffect(() => {
-    fetchStudents();
-    getBatches().then((res) => setBatches(res.data));
-  }, []);
+  fetchStudents();
+  getBatches()
+    .then((res) => setBatches(res.data))
+    .catch((err) => console.error('Failed to load batches:', err));
+}, []);
 
   const location = useLocation();
 
@@ -380,11 +384,11 @@ function Students() {
         <p className="text-sm text-slate-500">Loading students...</p>
       ) : (
         <Table
-          columns={columns}
-          data={students}
-          onRowClick={openEditModal}
-          emptyMessage="No students yet. Click 'Add Student' to admit your first one."
-        />
+  columns={columns}
+  data={students || []}
+  onRowClick={openEditModal}
+  emptyMessage="No students yet. Click 'Add Student' to admit your first one."
+/>
       )}
 
       <Modal
@@ -444,11 +448,11 @@ function Students() {
               className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
             >
               <option value="">No batch assigned</option>
-              {batches.map((b) => (
-                <option key={b._id} value={b._id}>
-                  {b.name}
-                </option>
-              ))}
+              {Array.isArray(batches) ? batches.map((b) => (
+  <option key={b._id} value={b._id}>
+    {b.name}
+  </option>
+)) : null}
             </select>
           </div>
 
