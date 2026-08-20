@@ -102,6 +102,23 @@ exports.login = async (req, res, next) => {
   }
 };
 
+// GET /api/auth/me
+// Called on app load to verify the stored JWT is still valid.
+// Returns the user payload so the frontend can restore session safely.
+exports.getMe = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user || !user.isActive) {
+      return res.status(401).json({ message: 'User not found or deactivated' });
+    }
+    res.json({
+      user: { id: user._id, name: user.name, role: user.role, instituteId: user.instituteId },
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 function generateToken(user) {
   return jwt.sign(
     {
