@@ -5,34 +5,22 @@ const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  // loading = true until the server confirms (or rejects) the stored token.
+  // loading = true until the server confirms (or rejects) the HttpOnly cookie.
   // No route should render before this resolves.
   const [loading, setLoading] = useState(true);
 
-  // On every app mount, verify the stored JWT against the real server.
-  // This prevents a logged-out (or expired-token) user from accessing
+  // On every app mount, verify the HttpOnly cookie against the real server.
+  // The cookie is sent automatically by the browser (withCredentials:true).
+  // This prevents a logged-out (or expired-cookie) user from accessing
   // protected pages just by typing a URL or pressing the back button.
   useEffect(() => {
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      // No token at all — definitely not logged in
-      setLoading(false);
-      return;
-    }
-
     axiosInstance
       .get('/auth/me')
       .then((res) => {
-        const userData = res.data.user;
-        // Refresh localStorage with the latest server-side user data
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
+        setUser(res.data.user);
       })
       .catch(() => {
-        // Token is invalid or expired — wipe everything so the user is fully logged out
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        // Cookie is missing, invalid, or expired — user is not authenticated.
         setUser(null);
       })
       .finally(() => {
@@ -42,12 +30,10 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const response = await axiosInstance.post('/auth/login', { email, password });
-    const { token, user: userData } = response.data;
-
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
+    // Server sets the HttpOnly 'token' cookie in the response — we never see it.
+    // We only receive the non-sensitive user metadata.
+    const { user: userData } = response.data;
     setUser(userData);
-
     return userData;
   };
 
@@ -58,19 +44,21 @@ export function AuthProvider({ children }) {
       email,
       password,
     });
-    const { token, user: userData } = response.data;
-
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
+    // Server sets the HttpOnly 'token' cookie in the response — we never see it.
+    const { user: userData } = response.data;
     setUser(userData);
-
     return userData;
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
+  const logout = async () => {
+    try {
+      // Ask the server to clear the HttpOnly cookie — we cannot do it from JS.
+      await axiosInstance.post('/auth/logout');
+    } catch {
+      // Even if the request fails, clear the local user state so the UI resets.
+    } finally {
+      setUser(null);
+    }
   };
 
   return (
@@ -84,4 +72,4 @@ export function AuthProvider({ children }) {
 // useContext + AuthContext separately every time
 export function useAuth() {
   return useContext(AuthContext);
-}
+}

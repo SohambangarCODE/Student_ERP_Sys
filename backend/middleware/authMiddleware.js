@@ -1,14 +1,19 @@
 const jwt = require('jsonwebtoken');
 
-// Verifies the JWT and attaches decoded info to req.user
+// Verifies the JWT and attaches decoded info to req.user.
+// Token is read from the HttpOnly cookie set at login — never from JS-accessible storage.
 exports.protect = (req, res, next) => {
-  const authHeader = req.headers.authorization;
+  // Read token from the HttpOnly cookie (primary) or Authorization header (fallback for
+  // Postman / API clients that don't use cookies during development/testing).
+  const token = req.cookies?.token || (
+    req.headers.authorization?.startsWith('Bearer ')
+      ? req.headers.authorization.split(' ')[1]
+      : null
+  );
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!token) {
     return res.status(401).json({ message: 'No token provided' });
   }
-
-  const token = authHeader.split(' ')[1];
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);

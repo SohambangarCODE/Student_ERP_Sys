@@ -73,7 +73,9 @@ exports.updateFeeStructure = async (req, res, next) => {
 };
 
 // POST /api/fees/razorpay/order
-// Step 1 of the flow — create an order with Razorpay, return its ID to the frontend
+// Step 1 of the flow — create an order with Razorpay, return its ID + the publishable key to the frontend.
+// The key_id is intentionally included here: it is a publishable identifier (not secret) that Razorpay
+// requires in the browser to open the checkout modal. The key_secret never leaves the server.
 exports.createRazorpayOrder = async (req, res, next) => {
   try {
     const { amount } = req.body; // amount in rupees, e.g. 7500
@@ -84,7 +86,8 @@ exports.createRazorpayOrder = async (req, res, next) => {
       receipt: `receipt_${Date.now()}`,
     });
 
-    res.json(order);
+    // Return the order AND the publishable key so the frontend has no need to hardcode it.
+    res.json({ ...order, key: process.env.RAZORPAY_KEY_ID });
   } catch (err) {
     next(err);
   }

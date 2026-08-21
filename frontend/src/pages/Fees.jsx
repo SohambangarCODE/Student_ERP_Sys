@@ -345,7 +345,7 @@ const [lookingUp, setLookingUp] = useState(false);
       );
 
       const options = {
-        key: "rzp_test_TMtJLnPgGhebOH",
+        key: order.key,  // served from backend env — never hardcoded in source
         amount: order.amount,
         currency: order.currency,
         name: "Institute Fee Payment",

@@ -4,6 +4,16 @@ const Institute = require('../models/Institute');
 const User = require('../models/User');
 const { consumeAccountAttempt, rewardSuccess } = require('../middleware/rateLimiter');
 
+// ── Cookie configuration ───────────────────────────────────────────────────────
+// Centralised so login and registerInstitute always set identical attributes.
+const COOKIE_NAME = 'token';
+const cookieOptions = () => ({
+  httpOnly: true,                                            // JS cannot read this cookie
+  secure: process.env.NODE_ENV === 'production',             // HTTPS only in prod
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // cross-site in prod SPA
+  maxAge: 7 * 24 * 60 * 60 * 1000,                          // 7 days — matches JWT expiry
+});
+
 // POST /api/auth/register-institute
 // Used ONCE per institute — creates the institute AND its first super_admin user
 exports.registerInstitute = async (req, res, next) => {
@@ -27,8 +37,10 @@ exports.registerInstitute = async (req, res, next) => {
 
     const token = generateToken(user);
 
+    // Set the JWT as an HttpOnly cookie — JS cannot read this
+    res.cookie(COOKIE_NAME, token, cookieOptions());
+
     res.status(201).json({
-      token,
       user: { id: user._id, name: user.name, role: user.role, instituteId: institute._id },
     });
   } catch (err) {
@@ -93,8 +105,10 @@ exports.login = async (req, res, next) => {
 
     const token = generateToken(user);
 
+    // Set the JWT as an HttpOnly cookie — never returned in the JSON body
+    res.cookie(COOKIE_NAME, token, cookieOptions());
+
     res.json({
-      token,
       user: { id: user._id, name: user.name, role: user.role, instituteId: user.instituteId },
     });
   } catch (err) {
@@ -103,7 +117,7 @@ exports.login = async (req, res, next) => {
 };
 
 // GET /api/auth/me
-// Called on app load to verify the stored JWT is still valid.
+// Called on app load to verify the stored JWT (in HttpOnly cookie) is still valid.
 // Returns the user payload so the frontend can restore session safely.
 exports.getMe = async (req, res, next) => {
   try {
@@ -117,6 +131,13 @@ exports.getMe = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+
+// POST /api/auth/logout
+// Clears the HttpOnly cookie so the browser no longer sends the JWT.
+exports.logout = (req, res) => {
+  res.clearCookie(COOKIE_NAME, cookieOptions());
+  res.json({ message: 'Logged out successfully' });
 };
 
 function generateToken(user) {

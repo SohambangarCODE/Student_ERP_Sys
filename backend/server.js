@@ -5,17 +5,21 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const path = require("path");
 
 const app = express();
 
-// ── Security: limit the CORS origin to your actual frontend URL in production ──
-// For local dev, the default open CORS is fine. For prod, set CORS_ORIGIN in .env.
-app.use(cors(
-  process.env.CORS_ORIGIN
-    ? { origin: process.env.CORS_ORIGIN, credentials: true }
-    : {}
-));
+// ── Security: credentials:true is required for HttpOnly cookies to be sent cross-origin.
+// CORS_ORIGIN must always be an explicit origin (never '*') when credentials are enabled.
+// In dev: http://localhost:5173 (Vite). In prod: set CORS_ORIGIN in .env to your domain.
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  credentials: true,
+}));
+
+// Parse incoming cookies — required to read the HttpOnly JWT cookie in authMiddleware
+app.use(cookieParser());
 
 // Serve static files from the "public" directory (frontend build lives inside backend/public)
 app.use(express.static(path.join(__dirname, "public")));

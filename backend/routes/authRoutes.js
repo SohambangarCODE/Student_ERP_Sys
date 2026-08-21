@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registerInstitute, login, getMe } = require('../controllers/authController');
+const { registerInstitute, login, getMe, logout } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 const { authIpLimiter } = require('../middleware/rateLimiter');
 const validate = require('../middleware/validate');
@@ -12,5 +12,6 @@ const { loginSchema, registerInstituteSchema } = require('../validations/auth.va
 router.post('/register-institute', authIpLimiter, validate(registerInstituteSchema), registerInstitute);
 router.post('/login', authIpLimiter, validate(loginSchema), login);
 router.get('/me', protect, getMe);
+router.post('/logout', protect, logout);
 
 module.exports = router;

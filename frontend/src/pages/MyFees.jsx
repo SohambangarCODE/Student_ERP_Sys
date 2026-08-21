@@ -50,7 +50,7 @@ function MyFees() {
       const { data: order } = await createRazorpayOrder(structure.balanceDue);
 
       const options = {
-        key: "rzp_test_TMtJLnPgGhebOH",
+        key: order.key,  // served from backend env — never hardcoded in source
         amount: order.amount,
         currency: order.currency,
         name: "Institute Fee Payment",
