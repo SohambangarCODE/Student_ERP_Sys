@@ -15,7 +15,7 @@ export function AuthProvider({ children }) {
   // protected pages just by typing a URL or pressing the back button.
   useEffect(() => {
     axiosInstance
-      .get('/auth/me')
+      .get('/auth/me', { withCredentials: true })
       .then((res) => {
         setUser(res.data.user);
       })
@@ -72,4 +72,4 @@ export function AuthProvider({ children }) {
 // useContext + AuthContext separately every time
 export function useAuth() {
   return useContext(AuthContext);
-}
+}

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { GraduationCap, BarChart3, Calendar, Crown, School, Wallet, Headset, Building2, Users } from 'lucide-react';
+import { GraduationCap, BarChart3, Calendar, Crown, School, Wallet, Headset, Building2, Users, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Input from '../components/Input';
 import Button from '../components/Button';
+import { SUPPORT_EMAIL } from '../lib/constants';
 
 const ROLES = [
   { key: 'super_admin', label: 'Admin', icon: Crown, note: 'The person who registered your institute. Can also register a new institute below.' },
@@ -137,6 +138,21 @@ function Login() {
               </Link>
             </p>
           )}
+
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-slate-500">
+            <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span>
+              Need help?{' '}
+              <a
+                href={`https://mail.google.com/mail/?view=cm&fs=1&to=${SUPPORT_EMAIL}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-brand-600 underline-offset-4 hover:underline break-all"
+              >
+                {SUPPORT_EMAIL}
+              </a>
+            </span>
+          </p>
         </div>
       </div>
     </div>
