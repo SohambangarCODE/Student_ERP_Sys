@@ -29,9 +29,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// ── Security: credentials:true is required for HttpOnly cookies to be sent cross-origin.
-// CORS_ORIGIN must always be an explicit origin (never '*') when credentials are enabled.
-// In dev: http://localhost:5173 (Vite). In prod: set CORS_ORIGIN in .env to your domain.
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true,
