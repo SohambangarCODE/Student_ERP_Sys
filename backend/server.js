@@ -11,23 +11,23 @@ const path = require("path");
 
 const app = express();
 
-// const helmet = require("helmet");
+const helmet = require("helmet");
 
-// app.use(helmet({
-//   frameguard: { action: "deny" },
-//   contentSecurityPolicy: {
-//     directives: {
-//       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-//       "frame-ancestors": ["'none'"],
-//     },
-//   },
-// }));
+app.use(helmet({
+  frameguard: { action: "deny" },
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "frame-ancestors": ["'none'"],
+    },
+  },
+}));
 
-// app.use((req, res, next) => {
-//   res.setHeader("X-Frame-Options", "DENY");
-//   res.setHeader("Content-Security-Policy", "frame-ancestors 'none'");
-//   next();
-// });
+app.use((req, res, next) => {
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Content-Security-Policy", "frame-ancestors 'none'");
+  next();
+});
 
 // ── Security: credentials:true is required for HttpOnly cookies to be sent cross-origin.
 // CORS_ORIGIN must always be an explicit origin (never '*') when credentials are enabled.
